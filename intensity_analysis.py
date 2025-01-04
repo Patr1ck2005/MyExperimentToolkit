@@ -27,7 +27,8 @@ def main():
     crop_shape_params = {
         'center_row': 0.38,   # 相对坐标
         'center_col': 0.5,   # 相对坐标
-        'radius': 0.35,       # 相对半径
+        # 'radius': 0.35,       # 相对半径 bigger
+        'radius': 0.31,       # 相对半径
         'inner_radius': 0,       # 相对半径
         'shape': 'circle',
         'relative': True     # 使用相对坐标

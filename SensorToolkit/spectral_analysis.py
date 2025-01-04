@@ -104,80 +104,127 @@ class SpectralAnalyzer:
 
         return resampled_stack
 
-    def visualize_3d_volume_pyvista(self, output_path: Path = Path("./spectral_3d_volume_pyvista.png")):
+    def visualize_3d_volume_pyvista(
+            self,
+            output_path: Path = Path("./spectral_3d_volume_pyvista.png"),
+            html_path: Path = Path("./spectral_3d_volume_pyvista.html"),
+            clim: tuple = None,
+            resample: bool = False,
+    ):
         """
-        Generate a 3D volume rendering visualization using PyVista.
+        使用 PyVista 生成3D体积渲染可视化，并保存为PNG和HTML文件。
 
-        :param output_path: The path to save the visualization image (PNG file).
+        :param output_path: 可视化图像的保存路径（PNG文件）。
+        :param html_path: 交互式可视化的HTML文件保存路径。
+        :param clim: 颜色范围的元组 (min, max)。如果为 None，则自动计算。
+        :param resample: ...
         """
         if not self.image_data:
             logging.warning("No image data loaded. Cannot perform 3D visualization.")
             return
 
-        # Assume all images have the same dimensions
+        # 假设所有图像的尺寸相同
         sample_wavelength = self.wavelengths[0]
         image_shape = self.image_data[sample_wavelength].shape
         rows, cols = image_shape
         original_z = np.array(self.wavelengths)  # Original Z-axis (non-uniform)
 
-        # Define a new uniform Z-axis
-        num_slices = len(self.wavelengths)  # Define the number of target slices, adjust as needed
+        # 定义新的均匀 Z 轴
+        num_slices = len(self.wavelengths)  # 定义目标切片数量，根据需要调整
         target_z = np.linspace(original_z.min(), original_z.max(), num_slices)
 
-        # Create a 3D data volume
+        # 创建3D数据体
         spectral_stack = np.zeros((rows, cols, len(original_z)))
 
         for idx, wavelength in enumerate(self.wavelengths):
             spectral_stack[:, :, idx] = self.image_data[wavelength]
 
-        # Resample the spectral_stack to a uniform Z-axis
-        logging.info("Starting resampling of spectral_stack to a uniform Z-axis...")
-        resampled_stack = self.resample_spectral_stack(spectral_stack, original_z, target_z)
-        logging.info("Resampling completed.")
+        if resample:
+            # 重新采样 spectral_stack 到均匀 Z 轴
+            logging.info("开始重新采样 spectral_stack 到均匀 Z 轴...")
+            resampled_stack = self.resample_spectral_stack(spectral_stack, original_z, target_z)
+            logging.info("重新采样完成。")
+        else:
+            logging.info("跳过重新采样步骤。")
+            resampled_stack = spectral_stack
 
-        # Normalize the data
+        # 归一化数据
         max_intensity = np.max(resampled_stack)
         if max_intensity > 0:
             resampled_stack = resampled_stack / max_intensity
 
-        # Create PyVista's ImageData
+        # 设置颜色范围
+        if clim is not None:
+            color_range = clim
+        else:
+            # 基于百分位数动态计算颜色范围
+            lower_percentile = np.percentile(resampled_stack, 5)
+            upper_percentile = np.percentile(resampled_stack, 95)
+            color_range = (0, upper_percentile)
+
+        # 创建 PyVista 的 ImageData
         grid = pv.ImageData()
         grid.dimensions = resampled_stack.shape
-        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * 10)  # Assume X and Y spacing are 1, Z spacing is uniform
+        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * 10)  # 假设 X 和 Y 间距为1，Z 间距为均匀
         grid.origin = (0, 0, target_z[0])
 
-        # Add data as 'intensity' scalar
-        grid.point_data["intensity"] = resampled_stack.flatten(order="F")  # Use point_data instead of point_arrays
+        # 将数据添加为 'intensity' 标量
+        grid.point_data["intensity"] = resampled_stack.flatten(order="F")  # 使用 point_data 代替 point_arrays
 
-        # Create the plotter
+        # 创建绘图器
         plotter = pv.Plotter()
 
-        # Add volume rendering
-        opacity = [0, 0.3, 1.0]  # Custom opacity mapping
-        cmap = "viridis"
+        # 添加体积渲染，并设置颜色范围
+        opacity = [0, 0.05, 0.5, 1.0]  # 自定义透明度映射
+        # cmap = "viridis"
+        cmap = "hot"
 
-        logging.info("Adding volume rendering to the plotter...")
-        plotter.add_volume(grid, scalars="intensity", cmap=cmap, opacity=opacity, shade=True)
-        logging.info("Volume rendering added.")
+        logging.info("开始添加体积渲染到绘图器...")
+        plotter.add_volume(
+            grid,
+            scalars="intensity",
+            cmap=cmap,
+            opacity=opacity,
+            # opacity='linear',
+            shade=True,
+            clim=color_range  # 设置颜色范围
+        )
+        logging.info("体积渲染添加完成。")
 
-        # # Set axis labels
-        # plotter.set_axes_labels("X Pixels", "Y Pixels", "Wavelength (nm)")
-
-        # Add title
+        # 添加标题
         plotter.add_title("3D Volume Rendering Spectral Visualization")
 
-        # Render and save as PNG
-        logging.info(f"Rendering and saving screenshot to {output_path}...")
-        plotter.show(screenshot=str(output_path))
+        # 渲染并保存为PNG截图
+        logging.info(f"开始渲染并保存截图至 {output_path}...")
+        try:
+            plotter.show(screenshot=str(output_path))
+        finally:
+            pass
+        logging.info(f"3D Volume Rendering Spectral Visualization 已保存至: {output_path}")
+
+        # 导出为交互式HTML文件
+        logging.info(f"开始导出交互式HTML至 {html_path}...")
+        plotter.export_html(str(html_path))
         plotter.close()
-        logging.info(f"3D Volume Rendering Spectral Visualization saved to: {output_path}")
+        logging.info(f"交互式HTML已保存至: {html_path}")
 
-    def run_3d_volume_visualization_pyvista(self, output_path: Path = Path("./spectral_3d_volume_pyvista.png")):
+    def run_3d_volume_visualization_pyvista(
+            self,
+            output_path: Path = Path("./spectral_3d_volume_pyvista.png"),
+            html_path: Path = Path("./spectral_3d_volume_pyvista.html"),
+            clim: tuple = None  # 新增参数
+    ):
         """
-        执行3D体积渲染光谱可视化的完整流程。
+        执行3D体积渲染光谱可视化的完整流程，并保存为PNG和HTML文件。
 
-        :param output_path: 可视化图像的保存路径。
+        :param output_path: 可视化图像的保存路径（PNG文件）。
+        :param html_path: 交互式可视化的HTML文件保存路径。
+        :param clim: 颜色范围的元组 (min, max)。如果为 None，则自动计算。
         """
         self.load_images()
-        self.visualize_3d_volume_pyvista(output_path=output_path)
+        self.visualize_3d_volume_pyvista(
+            output_path=output_path,
+            html_path=html_path,
+            clim=clim
+        )
 
