@@ -2,9 +2,9 @@
 
 from pathlib import Path
 import logging
-from .data_loading import ImageDataLoader
-from .data_processing import DataProcessor
-from .data_saving import CSVSaver
+from SensorToolkit.core.data_loading import ImageDataLoader
+from SensorToolkit.core.data_processing import DataProcessor
+from SensorToolkit.core.data_saving import CSVSaver
 import pandas as pd
 
 class OpticalIntensityAnalyzer:
@@ -106,7 +106,7 @@ class OpticalIntensityAnalyzer:
          # .apply_image_filter(filter_type='laplace')
          # .apply_image_filter(filter_type='lowpass', cutoff=20)
          # .apply_image_filter(filter_type='highpass', cutoff=20)
-         .apply_image_filter(filter_type='median', size=50)
+         # .apply_image_filter(filter_type='median', size=50)
          .crop_by_shape(
             center_row=self.crop_shape_params['center_row'],
             center_col=self.crop_shape_params['center_col'],

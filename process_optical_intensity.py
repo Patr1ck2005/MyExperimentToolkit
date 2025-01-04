@@ -2,7 +2,7 @@
 
 from pathlib import Path
 import logging
-from core.optical_intensity_analyzer import OpticalIntensityAnalyzer
+from SensorToolkit import OpticalIntensityAnalyzer
 
 # 设置日志
 logging.basicConfig(
