@@ -41,6 +41,7 @@ class SpectralAnalyzer:
         self.wavelength_order = wavelength_order
         self.image_data = {}
         self.wavelengths = []
+        self.comparison_data = None  # (可选) 对照组数据
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)  # 使用 FilenameParser
         logging.info(f"初始化 SpectralAnalyzer，图像目录: {self.images_dir}, 边界 NA: {self.boundary_na}")
 
