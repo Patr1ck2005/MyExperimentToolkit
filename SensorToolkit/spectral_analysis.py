@@ -106,73 +106,71 @@ class SpectralAnalyzer:
 
     def visualize_3d_volume_pyvista(self, output_path: Path = Path("./spectral_3d_volume_pyvista.png")):
         """
-        使用 PyVista 生成3D体积渲染可视化。
+        Generate a 3D volume rendering visualization using PyVista.
 
-        :param output_path: 可视化图像的保存路径（PNG文件）。
+        :param output_path: The path to save the visualization image (PNG file).
         """
         if not self.image_data:
-            logging.warning("没有加载任何图像数据，无法进行3D可视化。")
+            logging.warning("No image data loaded. Cannot perform 3D visualization.")
             return
 
-        # 假设所有图像的尺寸相同
+        # Assume all images have the same dimensions
         sample_wavelength = self.wavelengths[0]
         image_shape = self.image_data[sample_wavelength].shape
         rows, cols = image_shape
-        original_z = np.array(self.wavelengths)  # 原始 Z 轴（非均匀）
+        original_z = np.array(self.wavelengths)  # Original Z-axis (non-uniform)
 
-        # 定义新的均匀 Z 轴
-        num_slices = 30  # 定义目标切片数量，根据需要调整
+        # Define a new uniform Z-axis
+        num_slices = len(self.wavelengths)  # Define the number of target slices, adjust as needed
         target_z = np.linspace(original_z.min(), original_z.max(), num_slices)
 
-        # 创建3D数据体
+        # Create a 3D data volume
         spectral_stack = np.zeros((rows, cols, len(original_z)))
 
         for idx, wavelength in enumerate(self.wavelengths):
             spectral_stack[:, :, idx] = self.image_data[wavelength]
 
-        # 重新采样 spectral_stack 到均匀 Z 轴
-        logging.info("开始重新采样 spectral_stack 到均匀 Z 轴...")
+        # Resample the spectral_stack to a uniform Z-axis
+        logging.info("Starting resampling of spectral_stack to a uniform Z-axis...")
         resampled_stack = self.resample_spectral_stack(spectral_stack, original_z, target_z)
-        logging.info("重新采样完成。")
+        logging.info("Resampling completed.")
 
-        # 归一化数据
+        # Normalize the data
         max_intensity = np.max(resampled_stack)
         if max_intensity > 0:
             resampled_stack = resampled_stack / max_intensity
 
-        # 创建 PyVista 的 ImageData
+        # Create PyVista's ImageData
         grid = pv.ImageData()
         grid.dimensions = resampled_stack.shape
-        grid.spacing = (1, 1, (target_z[1] - target_z[0])*10)  # 假设 X 和 Y 间距为1，Z 间距为均匀
+        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * 10)  # Assume X and Y spacing are 1, Z spacing is uniform
         grid.origin = (0, 0, target_z[0])
 
-        # 将数据添加为 'intensity' 标量
-        grid.point_data["intensity"] = resampled_stack.flatten(order="F")  # 使用 point_data 代替 point_arrays
+        # Add data as 'intensity' scalar
+        grid.point_data["intensity"] = resampled_stack.flatten(order="F")  # Use point_data instead of point_arrays
 
-        # 创建绘图器
+        # Create the plotter
         plotter = pv.Plotter()
 
-        # 添加体积渲染
-        opacity = [0, 0.1, 1.0]  # 自定义透明度映射
+        # Add volume rendering
+        opacity = [0, 0.3, 1.0]  # Custom opacity mapping
         cmap = "viridis"
 
-        logging.info("开始添加体积渲染到绘图器...")
+        logging.info("Adding volume rendering to the plotter...")
         plotter.add_volume(grid, scalars="intensity", cmap=cmap, opacity=opacity, shade=True)
-        logging.info("体积渲染添加完成。")
+        logging.info("Volume rendering added.")
 
-        # # 设置坐标轴标签
-        # plotter.set_xlabel("X 像素")
-        # plotter.set_ylabel("Y 像素")
-        # plotter.set_zlabel("波长 (nm)")
+        # # Set axis labels
+        # plotter.set_axes_labels("X Pixels", "Y Pixels", "Wavelength (nm)")
 
-        # 添加标题
-        plotter.add_title("3D 体积渲染光谱可视化")
+        # Add title
+        plotter.add_title("3D Volume Rendering Spectral Visualization")
 
-        # 渲染并保存为PNG
-        logging.info(f"开始渲染并保存截图至 {output_path}...")
+        # Render and save as PNG
+        logging.info(f"Rendering and saving screenshot to {output_path}...")
         plotter.show(screenshot=str(output_path))
         plotter.close()
-        logging.info(f"3D 体积渲染光谱可视化已保存至: {output_path}")
+        logging.info(f"3D Volume Rendering Spectral Visualization saved to: {output_path}")
 
     def run_3d_volume_visualization_pyvista(self, output_path: Path = Path("./spectral_3d_volume_pyvista.png")):
         """
