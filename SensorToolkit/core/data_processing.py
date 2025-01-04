@@ -190,7 +190,7 @@ class DataProcessor:
 
         return filtered_image
 
-    def save_processed_image(self, save_path: Path, colormap='viridis'):
+    def save_processed_image(self, save_path: Path, colormap='gray') -> 'DataProcessor':
         """
         保存裁剪后的图像。
 
@@ -206,11 +206,7 @@ class DataProcessor:
             mask = self.data.notna().values.astype(np.uint8) * 255  # 255 表示不透明，0 表示透明
 
             # 将 DataFrame 转换为 NumPy 数组，替换 NaN 为 0
-            cropped_array = self.data.fillna(0).values
-
-            # 归一化数据到 0-1
-            norm = Normalize(vmin=cropped_array.min(), vmax=cropped_array.max())
-            normalized_data = norm(cropped_array)
+            img_array = self.data.fillna(0).values
 
             # 获取颜色映射函数
             if isinstance(colormap, str):
@@ -221,7 +217,7 @@ class DataProcessor:
                 raise ValueError("colormap 必须是有效的 matplotlib colormap 名称或可调用的映射函数")
 
             # 使用颜色映射生成 RGBA 数据
-            rgba_data = (cmap(normalized_data) * 255).astype(np.uint8)
+            rgba_data = (cmap(img_array) * 255).astype(np.uint8)
 
             # 替换 Alpha 通道为自定义的透明度（基于 mask）
             rgba_data[..., 3] = mask
@@ -238,6 +234,23 @@ class DataProcessor:
         except Exception as e:
             logging.error(f"保存当前的图像失败 ({save_path}): {e}")
             raise
+        return self
+
+    def normalize_img(self) -> 'DataProcessor':
+        """
+        normalize image
+
+        :return: 返回自身以支持链式调用
+        """
+        # 将 DataFrame 转换为 NumPy 数组
+        img_array = self.data
+        # 归一化数据到 0-1
+        norm = Normalize(vmin=img_array.min(), vmax=img_array.max())
+        normalized_data = norm(img_array)
+
+        # 更新数据
+        self.data = pd.DataFrame(normalized_data, index=self.data.index, columns=self.data.columns)
+        return self
 
     def reset_coordinates(self) -> 'DataProcessor':
         """

@@ -15,8 +15,8 @@ logging.basicConfig(
 
 def main():
     # 1. 定义输入和输出路径
-    # input_dir = Path("./data/3")
-    input_dir = Path("./data/CP/CP-1525~1575/1")
+    input_dir = Path("./data/3")
+    # input_dir = Path("./data/CP/CP-1525~1575/1")
     # input_dir = Path("./data/CP/CP-1525~1575/2")
     # input_dir = Path("./data/CP/CP-1525~1575/3")
     # input_dir = Path("./data/CP/comparision-LP-unpatterned-1550")
@@ -51,6 +51,7 @@ def main():
 
     # 6. 打印处理结果（可选）
     # print(analyzer.results)
+
 
 if __name__ == "__main__":
     main()
