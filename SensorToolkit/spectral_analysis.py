@@ -8,6 +8,11 @@ from PIL import Image
 import pandas as pd
 from scipy.interpolate import interp1d
 from SensorToolkit.utils.filename_parser import FilenameParser  # 确认导入路径
+import matplotlib.pyplot as plt  # 新增导入
+from scipy.ndimage import map_coordinates  # 用于插值
+from matplotlib.colors import Normalize
+import matplotlib.cm as cm
+
 
 
 class SpectralAnalyzer:
@@ -68,9 +73,9 @@ class SpectralAnalyzer:
                     # 创建透明度掩码（alpha > 0）
                     alpha_mask = data[:, :, 3] > 0
                     # 转换为灰度图像
-                    gray_image = np.array(img.convert("L"))
+                    gray_image = np.array(img.convert("L")).astype(np.float32)
                     # 仅保留非透明部分
-                    gray_image[~alpha_mask] = 0
+                    gray_image[~alpha_mask] = -1
                     self.image_data[wavelength] = gray_image
                 logging.info(f"加载波长 {wavelength} nm 的图像: {filename}")
             except Exception as e:
@@ -80,6 +85,45 @@ class SpectralAnalyzer:
         # 排序波长
         self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
         logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
+
+    def slice_cylinder_quarter(self, spectral_stack, center=None, radius=None, angle_range=(0, 90)):
+        """
+        对圆柱型数据进行切片处理，切掉 1/4 圆弧区域。
+
+        :param spectral_stack: 3D 数据体 (rows, cols, depth)。
+        :param center: 圆心的坐标 (x, y)。默认为图像中心。
+        :param radius: 圆的半径。默认为数据的最大对角线距离。
+        :param angle_range: 切片的角度范围（以度为单位），默认切掉 1/4 圆弧 (0, 90)。
+        :return: 切片处理后的 spectral_stack。
+        """
+        rows, cols, depth = spectral_stack.shape
+
+        # 默认圆心为图像中心
+        if center is None:
+            center = (cols / 2, rows / 2)
+
+        # 默认半径为图像对角线的一半
+        if radius is None:
+            radius = np.sqrt((cols / 2) ** 2 + (rows / 2) ** 2)
+
+        x_center, y_center = center
+        angle_min, angle_max = np.deg2rad(angle_range)  # 转换为弧度
+
+        # 创建掩码矩阵
+        x, y = np.meshgrid(np.arange(cols), np.arange(rows))
+        dx = x - x_center
+        dy = y - y_center
+        distances = np.sqrt(dx ** 2 + dy ** 2)
+        angles = np.arctan2(dy, dx)
+
+        # 判断哪些像素在圆弧区域内
+        mask = (distances <= radius) & (angle_min <= angles) & (angles <= angle_max)
+
+        # 应用掩码，将指定区域设为透明（-1）
+        for z in range(depth):
+            spectral_stack[:, :, z][mask] = -1
+
+        return spectral_stack
 
     def resample_spectral_stack(self, spectral_stack, original_z, target_z):
         """
@@ -148,6 +192,16 @@ class SpectralAnalyzer:
             logging.info("跳过重新采样步骤。")
             resampled_stack = spectral_stack
 
+        # 对圆柱型数据进行切片处理
+        logging.info("开始对数据进行切片处理...")
+        resampled_stack = self.slice_cylinder_quarter(
+            resampled_stack,
+            center=(cols / 2, rows / 2),  # 圆心为图像中心
+            radius=None,  # 自动计算半径
+            angle_range=(30, 120+45)  # 切掉圆弧
+        )
+        logging.info("切片处理完成。")
+
         # 归一化数据
         max_intensity = np.max(resampled_stack)
         if max_intensity > 0:
@@ -175,7 +229,9 @@ class SpectralAnalyzer:
         plotter = pv.Plotter()
 
         # 添加体积渲染，并设置颜色范围
-        opacity = [0, 0.05, 0.5, 1.0]  # 自定义透明度映射
+        opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
+        # opacity = 'linear'  # 定义透明度映射
+        # opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
         # cmap = "viridis"
         cmap = "hot"
 
@@ -185,7 +241,6 @@ class SpectralAnalyzer:
             scalars="intensity",
             cmap=cmap,
             opacity=opacity,
-            # opacity='linear',
             shade=True,
             clim=color_range  # 设置颜色范围
         )
@@ -228,3 +283,132 @@ class SpectralAnalyzer:
             clim=clim
         )
 
+    def visualize_two_planes_intensity_map(
+            self,
+            angles: list,
+            output_path: Path = Path("./two_planes_intensity_map.png"),
+            cmap1: str = "Reds",
+            cmap2: str = "Blues"
+    ):
+        """
+        可视化两个指定角度上的面强度图，并拼接在一张2D颜色映射图上。
+
+        :param angles: 包含两个需要提取的角度列表（以度为单位）。
+        :param output_path: 颜色映射图保存路径（PNG文件）。
+        :param cmap1: 第一个切面的颜色映射。
+        :param cmap2: 第二个切面的颜色映射。
+        """
+        if not self.image_data:
+            logging.warning("No image data loaded. Cannot perform two planes intensity visualization.")
+            return
+
+        if len(angles) != 2:
+            logging.warning("需要提供两个角度进行可视化。")
+            return
+
+        angle1, angle2 = angles
+        logging.info(f"开始提取角度 {angle1}° 和 {angle2}° 的面强度数据。")
+
+        # 假设所有图像的尺寸相同
+        sample_wavelength = self.wavelengths[0]
+        image_shape = self.image_data[sample_wavelength].shape
+        rows, cols = image_shape
+        center = (cols / 2, rows / 2)
+
+        # 将角度转换为弧度
+        angles_rad = [np.deg2rad(angle) for angle in angles]
+
+        # 确定最大半径
+        max_radius = np.min(center)
+
+        # 设置沿线的采样点数量，确保为整数
+        num_samples = int(max_radius)
+        logging.info(f"设置采样点数量为: {num_samples}")
+
+        # 生成采样点并提取面强度数据
+        intensity_maps = []
+        for phi_idx, (angle_deg, angle_rad) in enumerate(zip(angles, angles_rad)):
+            logging.info(f"提取角度 {angle_deg}° 的面强度数据。")
+            # 初始化一个二维数组：波长 x 采样点
+            intensity_map = np.zeros((len(self.wavelengths), num_samples))
+            for idx, wavelength in enumerate(self.wavelengths):
+                image = self.image_data[wavelength]
+                # 计算沿该角度的线性坐标
+                x = center[0] + np.linspace(0, max_radius * np.cos(angle_rad), num_samples)
+                y = center[1] + np.linspace(0, max_radius * np.sin(angle_rad), num_samples)
+
+                # 使用插值获取光强值
+                coords = np.vstack((y, x))
+                intensity = map_coordinates(image, coords, order=1, mode='constant', cval=-1)
+
+                # 将无效值（-1）替换为0，确保数组长度一致
+                intensity_clean = np.where(intensity >= 0, intensity, 0)
+
+                # 赋值到intensity_map
+                intensity_map[idx, :] = intensity_clean
+            if phi_idx % 2 == 0:
+                # 水平翻转切面
+                intensity_map = intensity_map[:, ::-1]
+            intensity_maps.append(intensity_map)
+
+        # 拼接两个二维数组（水平拼接）
+        combined_intensity_map = np.hstack(intensity_maps)  # 或者使用 np.vstack 进行垂直拼接
+        logging.info(f"拼接后的二维强度图形状: {combined_intensity_map.shape}")
+
+        # 创建图形和轴
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        # 显示拼接后的二维数组
+        im = ax.imshow(
+            combined_intensity_map,
+            aspect='auto',
+            extent=[0, num_samples * 2, self.wavelengths[-1], self.wavelengths[0]],
+            origin='upper',
+            cmap='viridis'
+        )
+
+        # 添加颜色条
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label("Intensity")
+
+        # 设置标签和标题
+        ax.set_xlabel("Incident angle")
+        ax.set_ylabel("Wavelength (nm)")
+        ax.set_title(f"Phi{angles[0]}° and Phi{angles[1]}° Slice Concatenated Intensity Map")
+
+        # # 添加分割线或注释以区分两个切面 (可选)
+        # mid_point = num_samples
+        # ax.axvline(x=mid_point, color='white', linestyle='--', linewidth=1)
+        # ax.text(mid_point / 2, self.wavelengths[0], f"{angles[0]}°", color='white', ha='center', va='bottom')
+        # ax.text(mid_point + num_samples / 2, self.wavelengths[0], f"{angles[1]}°", color='white', ha='center',
+        #         va='bottom')
+
+        # 保存图像
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logging.info(f"两个切面的面强度图已保存至: {output_path}")
+
+    def run_two_planes_intensity_map_visualization(
+            self,
+            angles: list,
+            output_path: Path = Path("./two_planes_intensity_map.png"),
+            cmap1: str = "Reds",
+            cmap2: str = "Blues"
+    ):
+        """
+        执行两个切面面强度图可视化的完整流程，并保存为PNG文件。
+
+        :param angles: 包含两个需要提取的角度列表（以度为单位）。
+        :param output_path: 颜色映射图保存路径（PNG文件）。
+        :param cmap1: 第一个切面的颜色映射。
+        :param cmap2: 第二个切面的颜色映射。
+        """
+        if not self.image_data:
+            self.load_images()
+        self.visualize_two_planes_intensity_map(
+            angles=angles,
+            output_path=output_path,
+            cmap1=cmap1,
+            cmap2=cmap2
+        )
