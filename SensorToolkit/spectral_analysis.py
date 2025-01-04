@@ -63,6 +63,19 @@ class SpectralAnalyzer:
             wavelength = info.get('wavelength_nm')
             if wavelength is None:
                 logging.warning(f"文件 {filename} 没有波长信息，跳过。")
+
+                if 'unpatten' in info['labels_from_filename']:
+                    with Image.open(image_file) as img:
+                        img = img.convert("RGBA")  # 确保有 alpha 通道
+                        data = np.array(img)
+                        # 创建透明度掩码（alpha > 0）
+                        alpha_mask = data[:, :, 3] > 0
+                        # 转换为灰度图像
+                        gray_image = np.array(img.convert("L")).astype(np.float32)
+                        # 仅保留非透明部分
+                        gray_image[~alpha_mask] = -1
+                        self.comparison_data = gray_image
+
                 continue
             self.wavelengths.append(wavelength)
             # 使用 PIL 加载图像以处理透明度
@@ -81,10 +94,17 @@ class SpectralAnalyzer:
             except Exception as e:
                 logging.error(f"加载图像 {filename} 时发生错误: {e}")
                 continue
-
         # 排序波长
         self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
         logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
+        # (可选) 计算效率
+        self.trans_to_efficiency()
+
+    def trans_to_efficiency(self):
+        for wavelength, image in self.image_data.items():
+            image /= self.comparison_data
+            image = np.clip(image, 0, 1)
+            self.image_data[wavelength] = image
 
     def slice_cylinder_quarter(self, spectral_stack, center=None, radius=None, angle_range=(0, 90)):
         """
@@ -287,16 +307,14 @@ class SpectralAnalyzer:
             self,
             angles: list,
             output_path: Path = Path("./two_planes_intensity_map.png"),
-            cmap1: str = "Reds",
-            cmap2: str = "Blues"
+            plot_by_frequency: bool = False,
     ):
         """
         可视化两个指定角度上的面强度图，并拼接在一张2D颜色映射图上。
 
         :param angles: 包含两个需要提取的角度列表（以度为单位）。
         :param output_path: 颜色映射图保存路径（PNG文件）。
-        :param cmap1: 第一个切面的颜色映射。
-        :param cmap2: 第二个切面的颜色映射。
+        :param plot_by_frequency: 是否按照频率顺序绘制（True），否则按照波长顺序绘制（False）。
         """
         if not self.image_data:
             logging.warning("No image data loaded. Cannot perform two planes intensity visualization.")
@@ -346,14 +364,26 @@ class SpectralAnalyzer:
 
                 # 赋值到intensity_map
                 intensity_map[idx, :] = intensity_clean
-            if phi_idx % 2 == 0:
-                # 水平翻转切面
+            if phi_idx % 2 == 1:
+                # 水平翻转切面以匹配最终视觉效果
                 intensity_map = intensity_map[:, ::-1]
             intensity_maps.append(intensity_map)
+            intensity_maps.reverse()
 
         # 拼接两个二维数组（水平拼接）
         combined_intensity_map = np.hstack(intensity_maps)  # 或者使用 np.vstack 进行垂直拼接
         logging.info(f"拼接后的二维强度图形状: {combined_intensity_map.shape}")
+
+        extent = [0, num_samples * 2, self.wavelengths[0], self.wavelengths[-1]]
+        # 根据绘图模式调整波长排序
+        if plot_by_frequency:
+            logging.info("按照频率顺序（波长逆序）进行绘图。")
+            # 如果按照频率绘图，逆转Y轴
+            origin = 'upper'
+        else:
+            logging.info("按照波长顺序进行绘图。")
+            # 按照波长顺序绘图
+            origin = 'lower'
 
         # 创建图形和轴
         fig, ax = plt.subplots(figsize=(12, 8))
@@ -362,9 +392,10 @@ class SpectralAnalyzer:
         im = ax.imshow(
             combined_intensity_map,
             aspect='auto',
-            extent=[0, num_samples * 2, self.wavelengths[-1], self.wavelengths[0]],
-            origin='upper',
-            cmap='viridis'
+            extent=extent,
+            origin=origin,
+            cmap='hot',
+            vmin=0,
         )
 
         # 添加颜色条
@@ -386,15 +417,14 @@ class SpectralAnalyzer:
         # 保存图像
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.show()
         plt.close()
         logging.info(f"两个切面的面强度图已保存至: {output_path}")
 
     def run_two_planes_intensity_map_visualization(
             self,
             angles: list,
-            output_path: Path = Path("./two_planes_intensity_map.png"),
-            cmap1: str = "Reds",
-            cmap2: str = "Blues"
+            output_path: Path = Path("./two_planes_intensity_map.png")
     ):
         """
         执行两个切面面强度图可视化的完整流程，并保存为PNG文件。
@@ -408,7 +438,5 @@ class SpectralAnalyzer:
             self.load_images()
         self.visualize_two_planes_intensity_map(
             angles=angles,
-            output_path=output_path,
-            cmap1=cmap1,
-            cmap2=cmap2
+            output_path=output_path
         )
