@@ -24,11 +24,16 @@ def main():
     )
 
     # 定义颜色范围（可选）
-    color_range = (0.0, 0.5)  # 根据需要调整
-    color_range = None  # 根据需要调整
+    color_range = (0.0, 1.0)  # 根据需要调整
+    # color_range = None  # 根据需要调整
 
     # 运行3D光谱可视化，并保存为PNG和HTML文件
     spectral_analyzer.load_data_files()
+    (spectral_analyzer
+    .apply_2d_upsample(
+        zoom_factor=5.0,
+        order=2
+    ))
     spectral_analyzer.visualize_3d_volume_pyvista(
         output_path=Path("./spectral_3d_visualization.png"),
         html_path=Path("./spectral_3d_visualization.html"),

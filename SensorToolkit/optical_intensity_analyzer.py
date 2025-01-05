@@ -104,7 +104,7 @@ class OpticalIntensityAnalyzer:
         file_name_without_ext = image_file.stem
         file_extension = image_file.suffix
         image_save_path = temp_dir / f"{file_name_without_ext}-processed.png"  # 更新保存路径为PNG
-        processor.save_processed_image(save_path=image_save_path)
+        processor.save_processed_data(save_path=image_save_path)
         processor.reset_coordinates()
         avg_intensity = processor.calculate_average_intensity()
 

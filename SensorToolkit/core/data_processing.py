@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-from scipy.ndimage import gaussian_filter, median_filter, uniform_filter, laplace
+from scipy.ndimage import gaussian_filter, median_filter, uniform_filter, laplace, zoom
 from skimage.filters import sobel
 from scipy.fft import fft2, ifft2, fftshift, ifftshift
 
@@ -29,7 +29,10 @@ class DataProcessor:
             data = data.drop(['row'], axis=1)
             data.index = data['row']
             data = data.drop(['row'], axis=1)
-        self.data = data.astype(float) / 255.0  # 归一化到0-1
+        if isinstance(data, int):
+            self.data = data.astype(float) / 255.0  # 归一化到0-1
+        else:
+            self.data = data
         logging.info(f"数据预处理完成，数据形状: {self.data.shape}")
 
     def crop_by_shape(
@@ -190,12 +193,12 @@ class DataProcessor:
 
         return filtered_image
 
-    def save_processed_image(self, save_path: Path, colormap='gray') -> 'DataProcessor':
+    def save_processed_data(self, save_path: Path = Path('temp_processed_image.png'), colormap='gray') -> 'DataProcessor':
         """
-        保存裁剪后的图像。
+        保存裁剪后的数据。
 
-        :param save_path: 保存图像的路径。
-        :param colormap: 保存图片的重颜色映射
+        :param save_path: 保存数据的路径。
+        :param colormap: 保存数据的重颜色映射
         :return: 返回自身以支持链式调用。
         """
         if self.data is None:
@@ -206,7 +209,7 @@ class DataProcessor:
             mask = self.data.notna().values.astype(np.uint8) * 255  # 255 表示不透明，0 表示透明
 
             # 将 DataFrame 转换为 NumPy 数组，替换 NaN 为 0
-            img_array = self.data.fillna(0).values
+            data_array = self.data.fillna(0).values
 
             # 获取颜色映射函数
             if isinstance(colormap, str):
@@ -217,7 +220,8 @@ class DataProcessor:
                 raise ValueError("colormap 必须是有效的 matplotlib colormap 名称或可调用的映射函数")
 
             # 使用颜色映射生成 RGBA 数据
-            rgba_data = (cmap(img_array) * 255).astype(np.uint8)
+            rgba_data = (cmap(data_array) * 255).astype(np.uint8)
+            # rgba_data = cmap(data_array)
 
             # 替换 Alpha 通道为自定义的透明度（基于 mask）
             rgba_data[..., 3] = mask
@@ -283,3 +287,45 @@ class DataProcessor:
         logging.info("数据已归一化。")
         return self
 
+    def upsample(self, zoom_factor: float, order: int = 3) -> 'DataProcessor':
+        """
+        对图像进行上采样。
+
+        :param zoom_factor: 缩放因子。例如，2.0 表示将图像大小加倍。
+        :param order: 插值的阶数。默认是 3 (双三次插值)。
+                      0 - 最近邻
+                      1 - 双线性
+                      3 - 双三次
+        :return: 返回自身以支持链式调用
+        """
+        if self.data is None:
+            raise ValueError("数据为空，无法进行上采样。")
+
+        data_array = self.data.values
+        zoomed_data = zoom(data_array, zoom=zoom_factor, order=order)
+        self.data = pd.DataFrame(zoomed_data)
+        logging.info(f"上采样完成，缩放因子={zoom_factor}, 插值阶数={order}")
+        return self
+
+
+class DataProcessor3D(DataProcessor):
+    """
+    负责处理3D数据的类，包括3D裁剪、3D滤波等。
+    """
+
+    def __init__(self, data: np.ndarray, pixel_size_um: float = 5.0):
+        super().__init__(data, pixel_size_um)
+        self.pixel_size_um = pixel_size_um
+        self.data = data.astype(float)
+        logging.info(f"3D数据预处理完成，数据形状: {self.data.shape}")
+
+    def apply_3d_gaussian_filter(self, sigma: float = 1.0) -> 'DataProcessor3D':
+        """
+        对3D数据应用高斯滤波。
+
+        :param sigma: 高斯滤波的标准差。
+        :return: 返回自身以支持链式调用
+        """
+        self.data = gaussian_filter(self.data, sigma=sigma)
+        logging.info(f"3D高斯滤波已应用，sigma={sigma}")
+        return self

@@ -2,16 +2,17 @@
 
 from pathlib import Path
 import logging
+
+import pandas as pd
 import pyvista as pv
 import numpy as np
 from PIL import Image
-import pandas as pd
 from scipy.interpolate import interp1d
+
+from SensorToolkit.core.data_processing import DataProcessor3D, DataProcessor
 from SensorToolkit.utils.filename_parser import FilenameParser  # 确认导入路径
 import matplotlib.pyplot as plt  # 新增导入
-from scipy.ndimage import map_coordinates  # 用于插值
-from matplotlib.colors import Normalize
-import matplotlib.cm as cm
+from scipy.ndimage import map_coordinates, gaussian_filter  # 用于插值
 
 
 class SpectralAnalyzer:
@@ -39,6 +40,7 @@ class SpectralAnalyzer:
         self.load_data = {}
         self.wavelengths = []
         self.comparison_data = None  # (可选) 对照组数据
+        self.comparison_data_path = Path("./temp/unpatten-processed.png")  # (可选) 对照组数据
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)  # 使用 FilenameParser
         logging.info(f"初始化 SpectralAnalyzer，工作目录: {self.working_dir}, 边界 NA: {self.boundary_na}")
 
@@ -121,6 +123,8 @@ class SpectralAnalyzer:
         self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
         logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
 
+        self.trans_to_efficiency()
+
     def load_data_files(self):
         """
         根据文件类型加载数据。
@@ -133,8 +137,20 @@ class SpectralAnalyzer:
             logging.error(f"不支持的文件类型: {self.file_type}")
 
     def trans_to_efficiency(self):
+        # 使用 PIL 加载图像以处理透明度
+        with Image.open(self.comparison_data_path) as img:
+            img = img.convert("RGBA")  # 确保有 alpha 通道
+            data = np.array(img)
+            # 创建透明度掩码（alpha > 0）
+            alpha_mask = data[:, :, 3] > 0
+            # 转换为灰度图像
+            gray_image = np.array(img.convert("L")).astype(np.float32)
+            # 仅保留非透明部分
+            gray_image[~alpha_mask] = -1
+            self.comparison_data = gray_image / 255  # 归一化数据
+        logging.info(f"对照图像: {self.comparison_data_path}")
         for wavelength, image in self.load_data.items():
-            image /= self.comparison_data
+            image[alpha_mask] /= self.comparison_data[alpha_mask]
             image = np.clip(image, 0, 1)
             self.load_data[wavelength] = image
 
@@ -271,7 +287,7 @@ class SpectralAnalyzer:
         # 创建 PyVista 的 ImageData
         grid = pv.ImageData()
         grid.dimensions = resampled_stack.shape
-        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * 10)  # 假设 X 和 Y 间距为1，Z 间距为均匀
+        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * rows / 80)  # 假设 X 和 Y 间距为1，Z 间距为均匀
         grid.origin = (0, 0, target_z[0])
 
         # 将数据添加为 'intensity' 标量
@@ -281,9 +297,9 @@ class SpectralAnalyzer:
         plotter = pv.Plotter()
 
         # 添加体积渲染，并设置颜色范围
-        opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
+        # opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
         # opacity = 'linear'  # 定义透明度映射
-        # opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
+        opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
         # cmap = "viridis"
         cmap = "hot"
 
@@ -293,7 +309,7 @@ class SpectralAnalyzer:
             scalars="intensity",
             cmap=cmap,
             opacity=opacity,
-            shade=True,
+            shade=False,
             clim=color_range  # 设置颜色范围
         )
         logging.info("体积渲染添加完成。")
@@ -425,3 +441,72 @@ class SpectralAnalyzer:
         plt.show()
         plt.close()
         logging.info(f"两个切面的面强度图已保存至: {output_path}")
+
+    def apply_2d_filter(self, **kwargs):
+        """
+        对加载的每个二维数据应用滤波。
+        """
+
+        logging.info("开始对所有二维数据应用滤波器和平滑处理。")
+
+        for wavelength, data in self.load_data.items():
+            logging.info(f"处理波长 {wavelength} nm 的数据。")
+            # 将2D NumPy数组转换为 DataFrame
+            df = pd.DataFrame(data)
+            processor = DataProcessor(data=df)
+
+            # 应用滤波器和平滑
+            processor.apply_image_filter(**kwargs)
+
+            # 更新 load_data
+            self.load_data[wavelength] = processor.data.values
+            logging.info(f"波长 {wavelength} nm 的数据处理完成。")
+
+    def apply_2d_upsample(self, **kwargs):
+        """
+        对加载的每个二维数据应用上采样。
+        """
+
+        logging.info("开始对所有二维数据应用上采样处理。")
+
+        for wavelength, data in self.load_data.items():
+            logging.info(f"处理波长 {wavelength} nm 的数据。")
+            # 将2D NumPy数组转换为 DataFrame
+            df = pd.DataFrame(data)
+            processor = DataProcessor(data=df)
+
+            # 应用上采样
+            processor.upsample(**kwargs)
+
+            processor.save_processed_data()
+
+            # 更新 load_data
+            self.load_data[wavelength] = processor.data.values
+            logging.info(f"波长 {wavelength} nm 的数据上采样完成。")
+
+    def process_3d_data(self, **kwargs):
+        """
+        对堆叠的三维数据进行处理（如3D高斯滤波）。
+        """
+
+        # 假设所有图像的尺寸相同
+        sample_wavelength = self.wavelengths[0]
+        image_shape = self.load_data[sample_wavelength].shape
+        rows, cols = image_shape
+
+        # 创建3D数据体
+        spectral_stack = np.zeros((rows, cols, len(self.wavelengths)))
+
+        for idx, wavelength in enumerate(self.wavelengths):
+            spectral_stack[:, :, idx] = self.load_data[wavelength]
+
+        # 使用 DataProcessor3D 进行3D滤波
+        processor_3d = DataProcessor3D(data=spectral_stack)
+        processor_3d.apply_3d_gaussian_filter(**kwargs)
+        filtered_stack = processor_3d.data
+        logging.info("3D高斯滤波完成。")
+
+        # 更新 load_data
+        for idx, wavelength in enumerate(self.wavelengths):
+            self.load_data[wavelength] = filtered_stack[:, :, idx]
+            logging.info(f"更新波长 {wavelength} nm 的数据。")
