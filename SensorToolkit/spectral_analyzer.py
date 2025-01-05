@@ -123,8 +123,6 @@ class SpectralAnalyzer:
         self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
         logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
 
-        self.trans_to_efficiency()
-
     def load_data_files(self):
         """
         根据文件类型加载数据。
@@ -222,6 +220,8 @@ class SpectralAnalyzer:
             html_path: Path = Path("./spectral_3d_volume_pyvista.html"),
             clim: tuple = None,
             resample: bool = False,
+            angles: list = None,
+            **kwargs,
     ):
         """
         使用 PyVista 生成3D体积渲染可视化，并保存为PNG和HTML文件。
@@ -266,14 +266,14 @@ class SpectralAnalyzer:
             resampled_stack,
             center=(cols / 2, rows / 2),  # 圆心为图像中心
             radius=None,  # 自动计算半径
-            angle_range=(30, 120+45)  # 切掉圆弧
+            angle_range=angles  # 切掉圆弧
         )
         logging.info("切片处理完成。")
 
-        # 归一化数据
+        # # 归一化数据
         max_intensity = np.max(resampled_stack)
-        if max_intensity > 0:
-            resampled_stack = resampled_stack / max_intensity
+        # if max_intensity > 0:
+        #     resampled_stack = resampled_stack / max_intensity
 
         # 设置颜色范围
         if clim is not None:
@@ -297,20 +297,16 @@ class SpectralAnalyzer:
         plotter = pv.Plotter()
 
         # 添加体积渲染，并设置颜色范围
-        # opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
-        # opacity = 'linear'  # 定义透明度映射
-        opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
-        # cmap = "viridis"
-        cmap = "hot"
 
         logging.info("开始添加体积渲染到绘图器...")
         plotter.add_volume(
             grid,
             scalars="intensity",
-            cmap=cmap,
-            opacity=opacity,
-            shade=False,
-            clim=color_range  # 设置颜色范围
+            # cmap=cmap,
+            # opacity=opacity,
+            # shade=True,
+            clim=color_range,  # 设置颜色范围
+            **kwargs,
         )
         logging.info("体积渲染添加完成。")
 
@@ -325,17 +321,18 @@ class SpectralAnalyzer:
             pass
         logging.info(f"3D Volume Rendering Spectral Visualization 已保存至: {output_path}")
 
-        # 导出为交互式HTML文件
-        logging.info(f"开始导出交互式HTML至 {html_path}...")
-        plotter.export_html(str(html_path))
-        plotter.close()
-        logging.info(f"交互式HTML已保存至: {html_path}")
+        # # 导出为交互式HTML文件
+        # logging.info(f"开始导出交互式HTML至 {html_path}...")
+        # plotter.export_html(str(html_path))
+        # plotter.close()
+        # logging.info(f"交互式HTML已保存至: {html_path}")
 
     def visualize_two_planes_intensity_map(
             self,
             angles: list,
             output_path: Path = Path("./two_planes_intensity_map.png"),
             plot_by_frequency: bool = False,
+            **kwargs,
     ):
         """
         可视化两个指定角度上的面强度图，并拼接在一张2D颜色映射图上。
@@ -424,6 +421,7 @@ class SpectralAnalyzer:
             origin=origin,
             cmap='hot',
             vmin=0,
+            **kwargs,
         )
 
         # 添加颜色条
@@ -461,6 +459,7 @@ class SpectralAnalyzer:
             # 更新 load_data
             self.load_data[wavelength] = processor.data.values
             logging.info(f"波长 {wavelength} nm 的数据处理完成。")
+        return self
 
     def apply_2d_upsample(self, **kwargs):
         """
@@ -483,6 +482,31 @@ class SpectralAnalyzer:
             # 更新 load_data
             self.load_data[wavelength] = processor.data.values
             logging.info(f"波长 {wavelength} nm 的数据上采样完成。")
+        return self
+
+    def crop_data(self, **kwargs):
+        """
+        对加载的每个二维数据进行裁剪。
+        """
+
+        logging.info("开始对所有二维数据进行裁剪处理。")
+
+        for wavelength, data in self.load_data.items():
+            logging.info(f"处理波长 {wavelength} nm 的数据。")
+            # 将2D NumPy数组转换为 DataFrame
+            df = pd.DataFrame(data)
+            processor = DataProcessor(data=df)
+
+            # 裁剪
+            processor.crop_by_shape(**kwargs)
+
+            cropped_data = processor.data.values.copy()
+
+            cropped_data[np.isnan(cropped_data)] = -1
+            # 更新 load_data
+            self.load_data[wavelength] = cropped_data
+            logging.info(f"波长 {wavelength} nm 的数据裁剪完成。")
+        return self
 
     def process_3d_data(self, **kwargs):
         """
