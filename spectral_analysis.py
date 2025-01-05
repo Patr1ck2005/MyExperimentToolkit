@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from SensorToolkit.spectral_analysis import SpectralAnalyzer
+from SensorToolkit.spectral_analyzer import SpectralAnalyzer
 
 def main():
     # 配置 logging
@@ -27,14 +27,19 @@ def main():
     color_range = None  # 根据需要调整
 
     # 运行3D光谱可视化，并保存为PNG和HTML文件
-    # spectral_analyzer.run_3d_volume_visualization_pyvista(
-    #     output_path=Path("./spectral_3d_visualization.png"),
-    #     html_path=Path("./spectral_3d_visualization.html"),
-    #     clim=color_range  # 或者设置为 None 使用自动计算
-    # )
+    spectral_analyzer.load_images()
+    spectral_analyzer.visualize_3d_volume_pyvista(
+        output_path=Path("./spectral_3d_visualization.png"),
+        html_path=Path("./spectral_3d_visualization.html"),
+        clim=color_range
+    )
 
     # 运行3D光谱可视化，并保存为PNG和HTML文件
-    spectral_analyzer.run_two_planes_intensity_map_visualization(angles=(30, 120+45))
+    spectral_analyzer.load_images()
+    spectral_analyzer.visualize_two_planes_intensity_map(
+        angles=(30, 120+45),
+        output_path=Path("./two_planes_intensity_map.png")
+    )
 
 if __name__ == "__main__":
     main()

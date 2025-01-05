@@ -39,7 +39,7 @@ class SpectralAnalyzer:
         self.images_dir = images_dir
         self.boundary_na = boundary_na
         self.wavelength_order = wavelength_order
-        self.image_data = {}
+        self.load_data = {}
         self.wavelengths = []
         self.comparison_data = None  # (可选) 对照组数据
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)  # 使用 FilenameParser
@@ -51,7 +51,7 @@ class SpectralAnalyzer:
         假设图像文件名中包含波长信息，例如 "1550.0-label1-label2.png"。
         仅加载非透明部分的图像数据。
         """
-        image_files = list(self.images_dir.glob("*.png"))  # 如果仅处理裁剪后的PNG，考虑使用 "*_cropped.png"
+        image_files = list(self.images_dir.glob("*.png"))
         if not image_files:
             logging.warning(f"在 {self.images_dir} 中未找到任何处理后的 PNG 文件。")
             return
@@ -75,7 +75,7 @@ class SpectralAnalyzer:
                         gray_image = np.array(img.convert("L")).astype(np.float32)
                         # 仅保留非透明部分
                         gray_image[~alpha_mask] = -1
-                        self.comparison_data = gray_image
+                        self.comparison_data = gray_image/255  # 归一化数据
 
                 continue
             self.wavelengths.append(wavelength)
@@ -90,7 +90,7 @@ class SpectralAnalyzer:
                     gray_image = np.array(img.convert("L")).astype(np.float32)
                     # 仅保留非透明部分
                     gray_image[~alpha_mask] = -1
-                    self.image_data[wavelength] = gray_image
+                    self.load_data[wavelength] = gray_image/255  # 归一化数据
                 logging.info(f"加载波长 {wavelength} nm 的图像: {filename}")
             except Exception as e:
                 logging.error(f"加载图像 {filename} 时发生错误: {e}")
@@ -99,13 +99,13 @@ class SpectralAnalyzer:
         self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
         logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
         # (可选) 计算效率
-        self.trans_to_efficiency()
+        # self.trans_to_efficiency()
 
     def trans_to_efficiency(self):
-        for wavelength, image in self.image_data.items():
+        for wavelength, image in self.load_data.items():
             image /= self.comparison_data
             image = np.clip(image, 0, 1)
-            self.image_data[wavelength] = image
+            self.load_data[wavelength] = image
 
     def slice_cylinder_quarter(self, spectral_stack, center=None, radius=None, angle_range=(0, 90)):
         """
@@ -184,13 +184,13 @@ class SpectralAnalyzer:
         :param clim: 颜色范围的元组 (min, max)。如果为 None，则自动计算。
         :param resample: ...
         """
-        if not self.image_data:
+        if not self.load_data:
             logging.warning("No image data loaded. Cannot perform 3D visualization.")
             return
 
         # 假设所有图像的尺寸相同
         sample_wavelength = self.wavelengths[0]
-        image_shape = self.image_data[sample_wavelength].shape
+        image_shape = self.load_data[sample_wavelength].shape
         rows, cols = image_shape
         original_z = np.array(self.wavelengths)  # Original Z-axis (non-uniform)
 
@@ -202,7 +202,7 @@ class SpectralAnalyzer:
         spectral_stack = np.zeros((rows, cols, len(original_z)))
 
         for idx, wavelength in enumerate(self.wavelengths):
-            spectral_stack[:, :, idx] = self.image_data[wavelength]
+            spectral_stack[:, :, idx] = self.load_data[wavelength]
 
         if resample:
             # 重新采样 spectral_stack 到均匀 Z 轴
@@ -317,7 +317,7 @@ class SpectralAnalyzer:
         :param output_path: 颜色映射图保存路径（PNG文件）。
         :param plot_by_frequency: 是否按照频率顺序绘制（True），否则按照波长顺序绘制（False）。
         """
-        if not self.image_data:
+        if not self.load_data:
             logging.warning("No image data loaded. Cannot perform two planes intensity visualization.")
             return
 
@@ -330,7 +330,7 @@ class SpectralAnalyzer:
 
         # 假设所有图像的尺寸相同
         sample_wavelength = self.wavelengths[0]
-        image_shape = self.image_data[sample_wavelength].shape
+        image_shape = self.load_data[sample_wavelength].shape
         rows, cols = image_shape
         center = (cols / 2, rows / 2)
 
@@ -351,7 +351,7 @@ class SpectralAnalyzer:
             # 初始化一个二维数组：波长 x 采样点
             intensity_map = np.zeros((len(self.wavelengths), num_samples))
             for idx, wavelength in enumerate(self.wavelengths):
-                image = self.image_data[wavelength]
+                image = self.load_data[wavelength]
                 # 计算沿该角度的线性坐标
                 x = center[0] + np.linspace(0, max_radius * np.cos(angle_rad), num_samples)
                 y = center[1] + np.linspace(0, max_radius * np.sin(angle_rad), num_samples)
@@ -408,36 +408,9 @@ class SpectralAnalyzer:
         ax.set_ylabel("Wavelength (nm)")
         ax.set_title(f"Phi{angles[0]}° and Phi{angles[1]}° Slice Concatenated Intensity Map")
 
-        # # 添加分割线或注释以区分两个切面 (可选)
-        # mid_point = num_samples
-        # ax.axvline(x=mid_point, color='white', linestyle='--', linewidth=1)
-        # ax.text(mid_point / 2, self.wavelengths[0], f"{angles[0]}°", color='white', ha='center', va='bottom')
-        # ax.text(mid_point + num_samples / 2, self.wavelengths[0], f"{angles[1]}°", color='white', ha='center',
-        #         va='bottom')
-
         # 保存图像
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.show()
         plt.close()
         logging.info(f"两个切面的面强度图已保存至: {output_path}")
-
-    def run_two_planes_intensity_map_visualization(
-            self,
-            angles: list,
-            output_path: Path = Path("./two_planes_intensity_map.png")
-    ):
-        """
-        执行两个切面面强度图可视化的完整流程，并保存为PNG文件。
-
-        :param angles: 包含两个需要提取的角度列表（以度为单位）。
-        :param output_path: 颜色映射图保存路径（PNG文件）。
-        :param cmap1: 第一个切面的颜色映射。
-        :param cmap2: 第二个切面的颜色映射。
-        """
-        if not self.image_data:
-            self.load_images()
-        self.visualize_two_planes_intensity_map(
-            angles=angles,
-            output_path=output_path
-        )

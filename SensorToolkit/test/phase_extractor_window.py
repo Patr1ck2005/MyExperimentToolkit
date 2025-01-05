@@ -4,7 +4,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from tkinter import Tk, Frame, Label, Button, DoubleVar, Scale, HORIZONTAL
 from PIL import Image
 
-from exp_postpocesses.test.phase_extract_cal import calculate_fourier, apply_filter
+from SensorToolkit.test.phase_extract_cal import calculate_fourier, apply_filter
 
 
 class FourierApp:
@@ -111,6 +111,7 @@ class FourierApp:
 if __name__ == "__main__":
     root = Tk()
     app = FourierApp(root, image_path='./artificial_pattern.png')
+    # app = FourierApp(root, image_path='./interference_cropped.bmp')
     # app = FourierApp(root, image_path='./interference_1.bmp')
     # app = FourierApp(root, image_path='./interference_2.bmp')
     # app = FourierApp(root, image_path='./interference_3.bmp')
