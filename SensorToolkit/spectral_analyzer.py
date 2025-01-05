@@ -1,4 +1,4 @@
-# core/spectral_analysis.py
+# spectral_analysis.py
 
 from pathlib import Path
 import logging
@@ -14,46 +14,79 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 
 
-
 class SpectralAnalyzer:
-    """
-    基于裁剪后的光强分布图进行光谱分析的类。
-    提供多种光谱预案，如3D可视化等。
-    """
-
     def __init__(
             self,
-            images_dir: Path,
+            working_dir: Path,
             boundary_na: float = 0.42,
             wavelength_order: str = 'descending',  # 'ascending' 或 'descending'
-            filename_delimiter: str = '-'  # 新增参数
+            filename_delimiter: str = '-',  # 新增参数
+            file_type: str = 'png'  # 新增参数，支持 'png' 或 'npy'
     ):
         """
         初始化光谱分析器。
 
-        :param images_dir: 裁剪后保存的 PNG 图像所在的目录。
+        :param working_dir: 待处理的数据文件所在的目录。
         :param boundary_na: 动量空间成像的数值孔径（NA）边界。
         :param wavelength_order: 波长排序方式，'ascending' 或 'descending'。
         :param filename_delimiter: 文件名中用于分割不同部分的分隔符。
+        :param file_type: 文件类型，支持 'png' 或 'npy'。
         """
-        self.images_dir = images_dir
+        self.working_dir = working_dir
         self.boundary_na = boundary_na
         self.wavelength_order = wavelength_order
+        self.file_type = file_type.lower()
         self.load_data = {}
         self.wavelengths = []
         self.comparison_data = None  # (可选) 对照组数据
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)  # 使用 FilenameParser
-        logging.info(f"初始化 SpectralAnalyzer，图像目录: {self.images_dir}, 边界 NA: {self.boundary_na}")
+        logging.info(f"初始化 SpectralAnalyzer，工作目录: {self.working_dir}, 边界 NA: {self.boundary_na}")
+
+    def load_numpy_arrays(self):
+        """
+        加载 .npy 文件数据并提取波长信息。
+        假设文件名中包含波长信息，例如 "1550.0-label1-label2.npy"。
+        """
+        npy_files = list(self.working_dir.glob("*.npy"))
+        if not npy_files:
+            logging.warning(f"在 {self.working_dir} 中未找到任何 .npy 文件。")
+            return
+
+        logging.info(f"加载 {len(npy_files)} 个 .npy 文件。")
+        for npy_file in npy_files:
+            filename = npy_file.name
+            # 使用 FilenameParser 提取波长
+            info = self.filename_parser.extract_info(filename)
+            wavelength = info.get('wavelength_nm')
+            if wavelength is None:
+                logging.warning(f"文件 {filename} 没有波长信息，跳过。")
+                continue
+
+            self.wavelengths.append(wavelength)
+            # 加载 .npy 文件
+            try:
+                data = np.load(npy_file)
+                if data.ndim != 2:
+                    logging.warning(f"文件 {filename} 的数据维度为 {data.ndim}，期望为 2D，跳过。")
+                    continue
+                self.load_data[wavelength] = data
+                logging.info(f"加载波长 {wavelength} nm 的数据: {filename}")
+            except Exception as e:
+                logging.error(f"加载 .npy 文件 {filename} 时发生错误: {e}")
+                continue
+
+        # 排序波长
+        self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
+        logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
 
     def load_images(self):
         """
-        加载图像数据并提取波长信息。
+        加载 PNG 图像数据并提取波长信息。
         假设图像文件名中包含波长信息，例如 "1550.0-label1-label2.png"。
-        仅加载非透明部分的图像数据。
         """
-        image_files = list(self.images_dir.glob("*.png"))
+        image_files = list(self.working_dir.glob("*.png"))
         if not image_files:
-            logging.warning(f"在 {self.images_dir} 中未找到任何处理后的 PNG 文件。")
+            logging.warning(f"在 {self.working_dir} 中未找到任何处理后的 PNG 文件。")
             return
 
         logging.info(f"加载 {len(image_files)} 个图像文件。")
@@ -64,20 +97,8 @@ class SpectralAnalyzer:
             wavelength = info.get('wavelength_nm')
             if wavelength is None:
                 logging.warning(f"文件 {filename} 没有波长信息，跳过。")
-
-                if 'unpatten' in info['labels_from_filename']:
-                    with Image.open(image_file) as img:
-                        img = img.convert("RGBA")  # 确保有 alpha 通道
-                        data = np.array(img)
-                        # 创建透明度掩码（alpha > 0）
-                        alpha_mask = data[:, :, 3] > 0
-                        # 转换为灰度图像
-                        gray_image = np.array(img.convert("L")).astype(np.float32)
-                        # 仅保留非透明部分
-                        gray_image[~alpha_mask] = -1
-                        self.comparison_data = gray_image/255  # 归一化数据
-
                 continue
+
             self.wavelengths.append(wavelength)
             # 使用 PIL 加载图像以处理透明度
             try:
@@ -90,16 +111,26 @@ class SpectralAnalyzer:
                     gray_image = np.array(img.convert("L")).astype(np.float32)
                     # 仅保留非透明部分
                     gray_image[~alpha_mask] = -1
-                    self.load_data[wavelength] = gray_image/255  # 归一化数据
+                    self.load_data[wavelength] = gray_image / 255  # 归一化数据
                 logging.info(f"加载波长 {wavelength} nm 的图像: {filename}")
             except Exception as e:
                 logging.error(f"加载图像 {filename} 时发生错误: {e}")
                 continue
+
         # 排序波长
         self.wavelengths = sorted(self.wavelengths, reverse=(self.wavelength_order == 'descending'))
         logging.info(f"波长排序 ({self.wavelength_order}): {self.wavelengths}")
-        # (可选) 计算效率
-        # self.trans_to_efficiency()
+
+    def load_data_files(self):
+        """
+        根据文件类型加载数据。
+        """
+        if self.file_type == 'png':
+            self.load_images()
+        elif self.file_type == 'npy':
+            self.load_numpy_arrays()
+        else:
+            logging.error(f"不支持的文件类型: {self.file_type}")
 
     def trans_to_efficiency(self):
         for wavelength, image in self.load_data.items():
@@ -283,26 +314,6 @@ class SpectralAnalyzer:
         plotter.export_html(str(html_path))
         plotter.close()
         logging.info(f"交互式HTML已保存至: {html_path}")
-
-    def run_3d_volume_visualization_pyvista(
-            self,
-            output_path: Path = Path("./spectral_3d_volume_pyvista.png"),
-            html_path: Path = Path("./spectral_3d_volume_pyvista.html"),
-            clim: tuple = None  # 新增参数
-    ):
-        """
-        执行3D体积渲染光谱可视化的完整流程，并保存为PNG和HTML文件。
-
-        :param output_path: 可视化图像的保存路径（PNG文件）。
-        :param html_path: 交互式可视化的HTML文件保存路径。
-        :param clim: 颜色范围的元组 (min, max)。如果为 None，则自动计算。
-        """
-        self.load_images()
-        self.visualize_3d_volume_pyvista(
-            output_path=output_path,
-            html_path=html_path,
-            clim=clim
-        )
 
     def visualize_two_planes_intensity_map(
             self,
