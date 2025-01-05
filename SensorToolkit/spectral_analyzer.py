@@ -40,7 +40,7 @@ class SpectralAnalyzer:
         self.load_data = {}
         self.wavelengths = []
         self.comparison_data = None  # (可选) 对照组数据
-        self.comparison_data_path = Path("./temp/unpatten-processed.png")  # (可选) 对照组数据
+        self.comparison_data_path = working_dir / "comparison-Au-processed.png"  # (可选) 对照组数据
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)  # 使用 FilenameParser
         logging.info(f"初始化 SpectralAnalyzer，工作目录: {self.working_dir}, 边界 NA: {self.boundary_na}")
 

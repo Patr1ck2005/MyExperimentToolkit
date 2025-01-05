@@ -15,11 +15,13 @@ logging.basicConfig(
 
 def main():
     # 1. 定义输入和输出路径
-    input_dir = Path("./data/3")
+    # input_dir = Path("./data/3")
     # input_dir = Path("./data/CP/CP-1525~1575/1")
     # input_dir = Path("./data/CP/CP-1525~1575/2")
     # input_dir = Path("./data/CP/CP-1525~1575/3")
     # input_dir = Path("./data/CP/comparision-LP-unpatterned-1550")
+    input_dir = Path("./data/LP/Gamma-X-patterned-1525~1575/1")
+    # input_dir = Path("./data/LP/Gamma-M-patterned-1525~1575/1")
     output_csv_path = Path("./rsl/optical_intensity_results.csv")
 
     # 2. 定义裁剪参数（圆形裁剪，固定中心）

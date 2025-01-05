@@ -209,7 +209,7 @@ class DataProcessor:
             mask = self.data.notna().values.astype(np.uint8) * 255  # 255 表示不透明，0 表示透明
 
             # 将 DataFrame 转换为 NumPy 数组，替换 NaN 为 0
-            data_array = self.data.fillna(0).values
+            data_array = self.data.fillna(0).values/255
 
             # 获取颜色映射函数
             if isinstance(colormap, str):
