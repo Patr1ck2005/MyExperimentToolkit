@@ -34,18 +34,6 @@ class FilenameParser:
         }
         labels_from_filename: List[str] = []
 
-        # # 尝试解析第一个部分为波长
-        # try:
-        #     wavelength = float(parts[0])
-        #     info['wavelength_nm'] = wavelength
-        #     logging.info(f"提取到波长: {wavelength} nm 从文件名: {filename}")
-        #     # 收集剩余部分作为标签
-        #     if len(parts) > 1:
-        #         labels_from_filename.extend(parts[1:])
-        # except ValueError:
-        #     # 如果无法解析为波长，将所有部分作为标签
-        #     labels_from_filename.extend(parts)
-        #     logging.info(f"文件名 {filename} 中未包含波长信息，提取标签: {labels_from_filename}")
         # 如果无法解析为波长，将所有部分作为标签
         labels_from_filename.extend(parts)
         logging.info(f"文件名 {filename} 中提取标签: {labels_from_filename}")
