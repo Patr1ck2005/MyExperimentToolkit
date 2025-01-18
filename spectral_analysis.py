@@ -26,11 +26,12 @@ def main():
     # cmap = "viridis"
     cmap = "hot"
 
-    if False:
+    if True:
         # 定义裁剪后图像所在的目录
         # data_directory = Path("./temp/A48-25deg-1530~1570-lossless-Au")
-        # data_directory = Path("./temp/A48-25deg-1530~1670")
-        data_directory = Path("./temp/A48-25deg-R1.05-1500~1570")
+        data_directory = Path("./temp/A48-25deg-1530~1670")
+        # data_directory = Path("./temp/A48-25deg-R1.05-1500~1570")
+        # data_directory = Path("./temp/A48-25deg-R1.10-1500~1570")
         # data_directory = Path("./temp/A128-20deg-1545~1555")
 
         # 初始化光谱分析器
@@ -75,9 +76,10 @@ def main():
 
     if True:
         # 定义裁剪后图像所在的目录
-        # data_directory = Path("./temp/1-filtered")
+        data_directory = Path("./temp/1-filtered")
         # data_directory = Path("./temp/3-filtered")
-        data_directory = Path("./temp/Gamma-M")
+        # data_directory = Path("./temp/Gamma-M")
+        # data_directory = Path("./temp/Gamma-X")
 
         # 初始化光谱分析器
         spectral_analyzer = SpectralAnalyzer(
@@ -91,7 +93,7 @@ def main():
         # color_range = (0.0, 1.0)  # 根据需要调整
         color_range = None  # 根据需要调整
 
-        start_angle = -10-45
+        start_angle = -10+45
 
         # 运行3D光谱可视化，并保存为PNG和HTML文件
         spectral_analyzer.load_data_files()

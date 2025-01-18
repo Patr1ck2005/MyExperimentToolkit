@@ -7,6 +7,7 @@ from PIL import Image
 from SensorToolkit.test.phase_extract_cal import calculate_fourier, apply_filter
 
 
+# 主应用程序
 class FourierApp:
     def __init__(self, root, image_path):
         self.root = root
@@ -24,6 +25,8 @@ class FourierApp:
         self.loc_x = DoubleVar(value=self.nx // 2)
         self.loc_y = DoubleVar(value=self.ny // 2)
         self.radius = DoubleVar(value=10)
+        self.shift_x = DoubleVar(value=0.0)  # 图像平移的 x 方向
+        self.shift_y = DoubleVar(value=0.0)  # 图像平移的 y 方向
 
         # 创建控制面板
         control_frame = Frame(root)
@@ -49,6 +52,19 @@ class FourierApp:
         self.radius_scale.grid(row=2, column=1, columnspan=3)
         Button(control_frame, text="+", command=lambda: self.adjust_param(self.radius, 1)).grid(row=2, column=4)
         Button(control_frame, text="-", command=lambda: self.adjust_param(self.radius, -1)).grid(row=2, column=5)
+
+        # 平移 控制
+        Label(control_frame, text="Shift X").grid(row=3, column=0)
+        self.shift_x_scale = Scale(control_frame, from_=-50, to=50, orient=HORIZONTAL, variable=self.shift_x, command=self.update_canvas)
+        self.shift_x_scale.grid(row=3, column=1, columnspan=3)
+        Button(control_frame, text="+", command=lambda: self.adjust_param(self.shift_x, 1)).grid(row=3, column=4)
+        Button(control_frame, text="-", command=lambda: self.adjust_param(self.shift_x, -1)).grid(row=3, column=5)
+
+        Label(control_frame, text="Shift Y").grid(row=4, column=0)
+        self.shift_y_scale = Scale(control_frame, from_=-50, to=50, orient=HORIZONTAL, variable=self.shift_y, command=self.update_canvas)
+        self.shift_y_scale.grid(row=4, column=1, columnspan=3)
+        Button(control_frame, text="+", command=lambda: self.adjust_param(self.shift_y, 1)).grid(row=4, column=4)
+        Button(control_frame, text="-", command=lambda: self.adjust_param(self.shift_y, -1)).grid(row=4, column=5)
 
         # 初始化 Matplotlib 图形
         self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 8))
@@ -78,14 +94,17 @@ class FourierApp:
         loc_x = int(self.loc_x.get())
         loc_y = int(self.loc_y.get())
         radius = int(self.radius.get())
+        shift_x = self.shift_x.get()  # 获取 x 方向的平移量
+        shift_y = self.shift_y.get()  # 获取 y 方向的平移量
 
         # 计算滤波结果
-        F_filtered, interference_filtered = apply_filter(self.F, loc_x, loc_y, radius, self.ny, self.nx)
+        F_shifted = calculate_fourier(self.image, shift_x, shift_y)
+        F_filtered, interference_filtered = apply_filter(F_shifted, loc_x, loc_y, radius, self.ny, self.nx)
 
         # 更新傅里叶谱
         self.axes[0, 0].clear()
-        self.axes[0, 0].imshow(np.log(np.abs(self.F) + 1), cmap='gray')
-        self.axes[0, 0].set_title('Original Fourier Spectrum')
+        self.axes[0, 0].imshow(np.log(np.abs(F_shifted) + 1), cmap='gray')
+        self.axes[0, 0].set_title('Original Fourier Spectrum with Shift')
         self.axes[0, 0].axis('off')
 
         self.axes[0, 1].clear()
@@ -110,7 +129,10 @@ class FourierApp:
 
 if __name__ == "__main__":
     root = Tk()
-    app = FourierApp(root, image_path='./artificial_pattern.png')
+    # app = FourierApp(root, image_path='./artificial_pattern.png')
+    # app = FourierApp(root, image_path=r'-1518nm-processed.png')
+    app = FourierApp(root, image_path=r'-1518nm.png')
+    # app = FourierApp(root, image_path=r'1.png')
     # app = FourierApp(root, image_path='./interference_cropped.bmp')
     # app = FourierApp(root, image_path='./interference_1.bmp')
     # app = FourierApp(root, image_path='./interference_2.bmp')

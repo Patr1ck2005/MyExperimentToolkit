@@ -2,12 +2,28 @@ import numpy as np
 from numpy.fft import fft2, fftshift, ifftshift, ifft2
 
 
-def calculate_fourier(image):
+# 计算傅里叶变换并加入相移
+def calculate_fourier(image, shift_x=0, shift_y=0):
     """
-    计算图像的傅里叶变换，并返回傅里叶谱。
+    计算傅里叶变换，并根据给定的平移量在频域中加入相移。
+    shift_x 和 shift_y 为图像中心的平移量
     """
-    F = fftshift(fft2(image))
-    return F
+    # 计算傅里叶变换并中心化
+    F = np.fft.fftshift(np.fft.fft2(image))  # 中心化傅里叶变换
+
+    ny, nx = image.shape
+    u = np.fft.fftfreq(nx) * nx  # 水平方向频率坐标
+    v = np.fft.fftfreq(ny) * ny  # 垂直方向频率坐标
+
+    U, V = np.meshgrid(u, v)  # 生成频率网格
+
+    # 修正频率坐标，使得相移计算正确
+    phase_shift = np.exp(1j * 2 * np.pi * (U * shift_x / nx + V * shift_y / ny))  # 加入平移因子
+
+    F_shifted = F * phase_shift  # 应用平移因子到傅里叶变换
+
+    return F_shifted
+
 
 
 def apply_filter(F, loc_x, loc_y, radius, ny, nx):
@@ -33,7 +49,7 @@ def apply_filter(F, loc_x, loc_y, radius, ny, nx):
 
     # 应用掩码
     F_filtered = F * mask
-    F_filtered = np.roll(F_filtered, shift=(ny // 2 - loc_y, nx // 2 - loc_x))
+    F_filtered = np.roll(F_filtered, shift=(ny // 2 - loc_y, nx // 2 - loc_x), axis=(0, 1))
 
     # 逆傅里叶变换
     interference_filtered = ifft2(ifftshift(F_filtered))

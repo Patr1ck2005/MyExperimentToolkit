@@ -90,7 +90,7 @@ class OpticalIntensityAnalyzer:
          # .apply_image_filter(filter_type='laplace')
          # .apply_image_filter(filter_type='lowpass', cutoff=20)
          # .apply_image_filter(filter_type='highpass', cutoff=20)
-         .apply_image_filter(filter_type='median', size=50)
+         # .apply_image_filter(filter_type='median', size=50)
          .crop_by_shape(
             center_row=self.crop_shape_params['center_row'],
             center_col=self.crop_shape_params['center_col'],
@@ -122,9 +122,9 @@ class OpticalIntensityAnalyzer:
         """
         批量处理输入目录中的所有图像文件。
         """
-        image_files = list(self.input_dir.glob("*.bmp"))  # 处理BMP文件
+        image_files = list(self.input_dir.glob("*.png"))  # 处理PNG文件
         if not image_files:
-            logging.warning(f"在 {self.input_dir} 中未找到任何 BMP 文件。")
+            logging.warning(f"在 {self.input_dir} 中未找到任何 PNG 文件。")
             return
 
         logging.info(f"开始批量处理 {len(image_files)} 个文件。")
