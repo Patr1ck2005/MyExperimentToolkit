@@ -9,8 +9,8 @@ def rename_files_by_creation_time_with_range(folder_path, start, end):
         print("没有找到图片文件")
         return
 
-    # 获取每个文件的创建时间，并按创建时间排序
-    files_with_time = [(f, os.path.getctime(os.path.join(folder_path, f))) for f in files]
+    # 获取每个文件的修改时间，并按创建时间排序
+    files_with_time = [(f, os.path.getmtime(os.path.join(folder_path, f))) for f in files]
     files_sorted = sorted(files_with_time, key=lambda x: x[1])  # 按时间排序
 
     # 计算步长
@@ -38,9 +38,11 @@ def rename_files_by_creation_time_with_range(folder_path, start, end):
         print(f"文件 {filename} 已重命名为 {new_name}")
 
 # 使用示例
-folder_path = r'D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\CP\1\pos_mid-1.000~15.835-~42~90\1480~1640-sweep\1-forw_back\back'  # 请替换为实际路径
+folder_path = r'D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\CP\1\pos_mid-1.000~15.835-~42~90\1480~1640-sweep\1-forw_back\forw'  # 请替换为实际路径
 start = 1480  # 起始命名
 end = 1640  # 终止命名
+# start = 1508  # 起始命名
+# end = 1528  # 终止命名
 
 # 调用函数进行重命名
 rename_files_by_creation_time_with_range(folder_path, start, end)

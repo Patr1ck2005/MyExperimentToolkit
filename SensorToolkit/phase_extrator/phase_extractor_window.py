@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import image as mpimg
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from tkinter import Tk, Frame, Label, Button, DoubleVar, Scale, HORIZONTAL
 from PIL import Image
 
-from SensorToolkit.test.phase_extract_cal import calculate_fourier, apply_filter
+from SensorToolkit.phase_extrator.phase_extract_cal import calculate_fourier, apply_filter
 
 
 # 主应用程序
@@ -12,7 +13,7 @@ class FourierApp:
     def __init__(self, root, image_path):
         self.root = root
         self.root.title("Fourier Transform Visualization")
-
+        self.filestem = image_path.split('/')[-1].split('.')[0]
         # 加载图像并计算初始傅里叶变换
         img = Image.open(image_path)
         img = img.convert('L')  # 转换为灰度图像
@@ -69,16 +70,54 @@ class FourierApp:
         # 初始化 Matplotlib 图形
         self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 8))
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
-        self.canvas.get_tk_widget().grid(row=1, column=0)
+        self.canvas.get_tk_widget().grid(row=0, column=1)
 
         # 添加放大工具
         toolbar_frame = Frame(root)
-        toolbar_frame.grid(row=2, column=0, pady=5)
+        toolbar_frame.grid(row=1, column=1, pady=5)
         self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
         self.toolbar.update()
 
+        # 添加保存按钮
+        save_button = Button(root, text="Save Images", command=self.save_images)
+        save_button.grid(row=2, column=0, padx=10, pady=10)
+
         # 初始化显示
         self.update_canvas()
+
+    def save_images(self):
+        """
+        保存四个子图为独立的图片，去掉标题、坐标轴和其他文字，仅保存图像。
+        """
+        # 设置保存的文件名
+        filenames = [
+            f'./rsl/{self.filestem}-original_fourier_spectrum.png',
+            f'./rsl/{self.filestem}-filtered_fourier_spectrum.png',
+            f'./rsl/{self.filestem}-extracted_intensity.png',
+            f'./rsl/{self.filestem}-extracted_phase.png'
+        ]
+
+        # 保存每个子图
+        for i, ax in enumerate(self.axes.flat):
+            # 创建新的 Figure 对象
+            fig = plt.figure(figsize=(6, 6))  # 可以根据需要调整大小
+            # 将子图的内容复制到新的 Figure
+            new_ax = fig.add_subplot(111)
+
+            # 获取子图的内容
+            # 只处理图像艺术对象
+            for artist in ax.get_children():
+                # 如果 artist 是图像对象，复制其内容
+                if isinstance(artist, mpimg.AxesImage):
+                    new_ax.imshow(artist.get_array(), cmap=artist.get_cmap())
+
+            # 去除坐标轴和标题
+            new_ax.axis('off')
+
+            # 保存子图
+            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+            fig.savefig(filenames[i], dpi=300, bbox_inches='tight', pad_inches=0)
+            plt.close(fig)  # 关闭当前的 Figure，以释放内存
 
     def adjust_param(self, param, step):
         """
@@ -130,8 +169,8 @@ class FourierApp:
 if __name__ == "__main__":
     root = Tk()
     # app = FourierApp(root, image_path='./artificial_pattern.png')
-    # app = FourierApp(root, image_path=r'-1518nm-processed.png')
-    app = FourierApp(root, image_path=r'-1518nm.png')
+    # app = FourierApp(root, image_path=r'./-1518nm-processed.png')
+    app = FourierApp(root, image_path=r'./-1518nm.png')
     # app = FourierApp(root, image_path=r'1.png')
     # app = FourierApp(root, image_path='./interference_cropped.bmp')
     # app = FourierApp(root, image_path='./interference_1.bmp')
