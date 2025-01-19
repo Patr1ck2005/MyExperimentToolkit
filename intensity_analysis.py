@@ -21,7 +21,9 @@ def main():
     # input_dir = Path("./data/CP/CP-1525~1575/3")
     # input_dir = Path("./data/CP/comparision-LP-unpatterned-1550")
     # input_dir = Path("./data/LP/Gamma-X-patterned-1525~1575/1")
-    input_dir = Path("./data/20250118/1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better/CP/1/pos_mid-1.000~15.835-~42~90/phase-2500Exposure-1508~1528/c-1500exprosure")
+    # input_dir = Path("./data/20250118/1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better/CP/1/pos_mid-1.000~15.835-~42~90/phase-2500Exposure-1508~1528/c-1500exprosure")
+    input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\CP\1\pos_mid-1.000~15.835-~42~90\1480~1640-sweep\1-forw_back\forw")
+    # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\reference-better-sequenced")
     # input_dir = Path("./data/LP/Gamma-M-patterned-1525~1575/1")
     output_csv_path = Path("./rsl/optical_intensity_results.csv")
 
@@ -29,9 +31,10 @@ def main():
 
     crop_shape_params = {
         'center_row': 0.46,   # 相对坐标
-        'center_col': 0.47,   # 相对坐标
+        'center_col': 0.46,   # 相对坐标
         # 'radius': 0.35,       # 相对半径 bigger
-        'radius': 0.33,       # 相对半径
+        # 'radius': 0.31,       # 相对半径
+        'radius': 0.15,       # 相对半径 smaller
         'inner_radius': 0,       # 相对半径
         'shape': 'circle',
         'relative': True     # 使用相对坐标
