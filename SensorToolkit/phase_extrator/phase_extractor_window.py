@@ -10,7 +10,7 @@ from SensorToolkit.phase_extrator.phase_extract_cal import calculate_fourier, ap
 
 # 主应用程序
 class FourierApp:
-    def __init__(self, root, image_path):
+    def __init__(self, root, image_path, initial_value: dict = None):
         self.root = root
         self.root.title("Fourier Transform Visualization")
         self.filestem = image_path.split('/')[-1].split('.')[0]
@@ -28,6 +28,12 @@ class FourierApp:
         self.radius = DoubleVar(value=10)
         self.shift_x = DoubleVar(value=0.0)  # 图像平移的 x 方向
         self.shift_y = DoubleVar(value=0.0)  # 图像平移的 y 方向
+        if initial_value:
+            self.loc_x.set(initial_value.get('loc_x', self.nx // 2))
+            self.loc_y.set(initial_value.get('loc_y', self.ny // 2))
+            self.radius.set(initial_value.get('radius', 10))
+            self.shift_x.set(initial_value.get('shift_x', 0.0))
+            self.shift_y.set(initial_value.get('shift_y', 0.0))
 
         # 创建控制面板
         control_frame = Frame(root)
