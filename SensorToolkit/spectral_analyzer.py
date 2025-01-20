@@ -7,6 +7,7 @@ import pandas as pd
 import pyvista as pv
 import numpy as np
 from PIL import Image
+from matplotlib import cm
 from scipy.interpolate import interp1d
 
 from SensorToolkit.core.data_processing import DataProcessor3D, DataProcessor
@@ -21,8 +22,10 @@ class SpectralAnalyzer:
             working_dir: Path,
             boundary_na: float = 0.42,
             wavelength_order: str = 'descending',  # 'ascending' 或 'descending'
-            filename_delimiter: str = '-',  # 新增参数
-            file_type: str = 'png'  # 新增参数，支持 'png' 或 'npy'
+            filename_delimiter: str = '-',
+            file_type: str = 'png',  # 支持 'png' 或 'npy'
+            min_wavelength: float = 400.0,  # 最小波长
+            max_wavelength: float = 2000.0,  # 最大波长
     ):
         """
         初始化光谱分析器。
@@ -32,6 +35,8 @@ class SpectralAnalyzer:
         :param wavelength_order: 波长排序方式，'ascending' 或 'descending'。
         :param filename_delimiter: 文件名中用于分割不同部分的分隔符。
         :param file_type: 文件类型，支持 'png' 或 'npy'。
+        :param min_wavelength: 最小波长
+        :param max_wavelength: 最大波长
         """
         self.working_dir = working_dir
         self.boundary_na = boundary_na
@@ -39,6 +44,7 @@ class SpectralAnalyzer:
         self.file_type = file_type.lower()
         self.load_data = {}
         self.wavelengths = []
+        self.wavelength_range = (min_wavelength, max_wavelength)
         self.comparison_data = None  # (可选) 对照组数据
         self.comparison_data_path = working_dir / "comparison-Au-processed.png"  # (可选) 对照组数据
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)  # 使用 FilenameParser
@@ -60,6 +66,11 @@ class SpectralAnalyzer:
             # 使用 FilenameParser 提取波长
             info = self.filename_parser.extract_info(filename)
             wavelength = info.get('wavelength_nm')
+
+            if wavelength < self.wavelength_range[0] or wavelength > self.wavelength_range[1]:
+                logging.warning(f"文件 {filename} 的波长 {wavelength} nm 超出范围，跳过。")
+                continue
+
             if wavelength is None:
                 logging.warning(f"文件 {filename} 没有波长信息，跳过。")
                 continue
@@ -97,6 +108,11 @@ class SpectralAnalyzer:
             # 使用 FilenameParser 提取波长
             info = self.filename_parser.extract_info(filename)
             wavelength = info.get('wavelength_nm')
+
+            if wavelength < self.wavelength_range[0] or wavelength > self.wavelength_range[1]:
+                logging.warning(f"文件 {filename} 的波长 {wavelength} nm 超出范围，跳过。")
+                continue
+
             if wavelength is None:
                 logging.warning(f"文件 {filename} 没有波长信息，跳过。")
                 continue
@@ -287,7 +303,7 @@ class SpectralAnalyzer:
         # 创建 PyVista 的 ImageData
         grid = pv.ImageData()
         grid.dimensions = resampled_stack.shape
-        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * rows / 80)  # 假设 X 和 Y 间距为1，Z 间距为均匀
+        grid.spacing = (1, 1, (target_z[1] - target_z[0]) * rows / 160)  # 假设 X 和 Y 间距为1，Z 间距为均匀
         grid.origin = (0, 0, target_z[0])
 
         # 将数据添加为 'intensity' 标量
@@ -296,8 +312,16 @@ class SpectralAnalyzer:
         # 创建绘图器
         plotter = pv.Plotter()
 
-        # 添加体积渲染，并设置颜色范围
+        # # 启用正交投影 (平行视图)
+        # plotter.camera.parallel_projection = True
+        # # 设置相机视角
+        # plotter.camera.position = [0, 0, 1]  # 设置相机位置，选择合适的角度
+        # plotter.camera.viewup = [0, 1, 0]  # 设置相机"上"方向（可以根据需要调整）
 
+        # 设置视场角（Field of View, FOV）
+        plotter.camera.view_angle = 45  # 调整视场角度
+
+        # 添加体积渲染，并设置颜色范围
         logging.info("开始添加体积渲染到绘图器...")
         plotter.add_volume(
             grid,
@@ -419,7 +443,6 @@ class SpectralAnalyzer:
             aspect='auto',
             extent=extent,
             origin=origin,
-            cmap='hot',
             vmin=0,
             **kwargs,
         )
@@ -439,6 +462,16 @@ class SpectralAnalyzer:
         plt.show()
         plt.close()
         logging.info(f"两个切面的面强度图已保存至: {output_path}")
+
+        logging.info("开始保存为PIL图像。")
+        # 将颜色映射应用到强度图
+        cmap = cm.get_cmap(kwargs['cmap'])  # 你可以选择任何支持的颜色映射
+        mapped_image = cmap(combined_intensity_map / np.max(combined_intensity_map))  # 归一化并映射到颜色空间
+        # 转换为RGB图像 (去除透明度通道)
+        pil_image = Image.fromarray((mapped_image[:, :, :3] * 255).astype(np.uint8))
+        pil_image_path = output_path.with_suffix(".pil_image.png")
+        pil_image.save(pil_image_path)
+        logging.info(f"PIL图像已保存至: {pil_image_path}")
 
     def apply_2d_filter(self, **kwargs):
         """

@@ -31,7 +31,7 @@ def rename_image_files_to_sequence(folder_path):
         print(f"文件 {filename} 已重命名为 {new_name}")
 
 # 使用示例
-folder_path = r'D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\reference-better'  # 请替换为实际路径
+folder_path = r'D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\LP\1\sequence-pos_mid-1.000~15.835-~2~90-Gamma_X'  # 请替换为实际路径
 
 # 调用函数进行重命名
 rename_image_files_to_sequence(folder_path)

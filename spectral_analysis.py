@@ -17,16 +17,17 @@ def main():
 
 
     # 定义颜色范围（可选）
-    color_range = (0.0, 1.0)  # 根据需要调整
-    # color_range = None  # 根据需要调整
+    # color_range = (0.0, 1.0)  # 根据需要调整
+    color_range = None  # 根据需要调整
 
-    opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
-    # opacity = 'linear'  # 定义透明度映射
+    # opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
+    opacity = 'linear'  # 定义透明度映射
     # opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
     # cmap = "viridis"
-    cmap = "hot"
+    # cmap = "hot"
+    cmap = "magma"
 
-    if True:
+    if False:
         # 定义裁剪后图像所在的目录
         # data_directory = Path("./temp/A48-25deg-1530~1570-lossless-Au")
         data_directory = Path("./temp/A48-25deg-1530~1670")
@@ -76,7 +77,10 @@ def main():
 
     if True:
         # 定义裁剪后图像所在的目录
-        data_directory = Path("./temp/1-filtered")
+        data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\divided")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\window_average_rsl\5")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\unpatterned\window_average_rsl")
+        # data_directory = Path("./temp/1-filtered")
         # data_directory = Path("./temp/3-filtered")
         # data_directory = Path("./temp/Gamma-M")
         # data_directory = Path("./temp/Gamma-X")
@@ -87,13 +91,14 @@ def main():
             boundary_na=0.42,
             wavelength_order='descending',  # 或 'ascending'
             file_type='png',  # 'npy' 或 'png'
+            max_wavelength=1601
         )
 
         # 定义颜色范围（可选）
         # color_range = (0.0, 1.0)  # 根据需要调整
         color_range = None  # 根据需要调整
 
-        start_angle = -10+45
+        start_angle = +0
 
         # 运行3D光谱可视化，并保存为PNG和HTML文件
         spectral_analyzer.load_data_files()
@@ -110,7 +115,8 @@ def main():
         # 运行3D光谱可视化，并保存为PNG和HTML文件
         spectral_analyzer.visualize_two_planes_intensity_map(
             angles=[start_angle, start_angle+145],
-            output_path=Path("./two_planes_intensity_map.png")
+            output_path=Path("./two_planes_intensity_map.png"),
+            cmap=cmap,
         )
 
 if __name__ == "__main__":
