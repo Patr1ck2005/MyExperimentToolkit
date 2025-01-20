@@ -466,7 +466,8 @@ class SpectralAnalyzer:
         logging.info("开始保存为PIL图像。")
         # 将颜色映射应用到强度图
         cmap = cm.get_cmap(kwargs['cmap'])  # 你可以选择任何支持的颜色映射
-        mapped_image = cmap(combined_intensity_map / np.max(combined_intensity_map))  # 归一化并映射到颜色空间
+        # combined_intensity_map = combined_intensity_map / np.percentile(combined_intensity_map, 95)  # 归一化
+        mapped_image = cmap(combined_intensity_map)  # 映射到颜色空间
         # 转换为RGB图像 (去除透明度通道)
         pil_image = Image.fromarray((mapped_image[:, :, :3] * 255).astype(np.uint8))
         pil_image_path = output_path.with_suffix(".pil_image.png")
