@@ -307,6 +307,47 @@ class DataProcessor:
         logging.info(f"上采样完成，缩放因子={zoom_factor}, 插值阶数={order}")
         return self
 
+    def calculate_avg_intensity_in_radius_range(self, min_radius: float, max_radius: int) -> float:
+        """
+        计算指定半径范围内的平均光强值（例如，从 min_radius 到 max_radius 的区域）
+
+        :param min_radius: 最小半径
+        :param max_radius: 最大半径
+        :return: 计算出的平均光强值
+        """
+        # 获取裁剪后的数据的形状
+        num_rows, num_cols = self.data.shape
+
+        min_radius *= num_rows
+        max_radius *= num_cols
+
+        # 获取行列坐标网格
+        y, x = np.ogrid[:num_rows, :num_cols]
+        center_y, center_x = num_rows // 2, num_cols // 2  # 假设中心在数据的中心
+
+        # 计算每个像素到中心的距离
+        r2 = (x - center_x) ** 2 + (y - center_y) ** 2
+
+        # 创建圆形掩码
+        mask_min_radius = r2 >= min_radius ** 2
+        mask_max_radius = r2 <= max_radius ** 2
+        mask = mask_min_radius & mask_max_radius  # 选择在两个半径范围之间的像素
+
+        # 获取该掩码区域内的光强值
+        region_data = self.data.values[mask]  # 提取该范围内的光强值
+
+        if len(region_data) > 0:
+            avg_intensity = region_data.mean()  # 计算该范围内的平均光强
+        else:
+            avg_intensity = 0.0  # 如果区域内没有有效数据，则返回 0
+
+        logging.info(f"半径 {min_radius}-{max_radius} 范围内的平均光强: {avg_intensity}")
+        return avg_intensity
+
+    @staticmethod
+    def NA2radius(na, full_na, full_radius):
+        return full_radius * (na / np.sqrt(1 - na ** 2)) / (full_na / np.sqrt(1 - full_na ** 2))
+
 
 class DataProcessor3D(DataProcessor):
     """
