@@ -77,7 +77,9 @@ def main():
 
     if True:
         # 定义裁剪后图像所在的目录
-        data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\divided")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\divided")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\Gamma_X\window_average_rsl")
+        data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\LP\1\sequence-pos_mid-1.000~15.835-~2~90-Gamma_M\forw_back\forw\window_average_rsl")
         # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\window_average_rsl\5")
         # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\unpatterned\window_average_rsl")
         # data_directory = Path("./temp/1-filtered")
@@ -98,7 +100,7 @@ def main():
         # color_range = (0.0, 1.0)  # 根据需要调整
         color_range = None  # 根据需要调整
 
-        start_angle = +0
+        start_angle = +90
 
         # 运行3D光谱可视化，并保存为PNG和HTML文件
         spectral_analyzer.load_data_files()

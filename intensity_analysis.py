@@ -26,7 +26,7 @@ def main():
     # input_dir = Path("./data/LP/Gamma-X-patterned-1525~1575/1")
     # input_dir = Path("./data/20250118/1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better/CP/1/pos_mid-1.000~15.835-~42~90/phase-2500Exposure-1508~1528/c-1500exprosure")
     # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\CP\1\pos_mid-1.000~15.835-~42~90\1480~1640-sweep\1-forw_back\forw")
-    input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\LP\1\sequence-pos_mid-1.000~15.835-~2~90-Gamma_X\back")
+    input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\LP\1\sequence-pos_mid-1.000~15.835-~2~90-Gamma_M\back")
     # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\CP\1\detail-pos_mid-1.000~15.835-~314~90-1508~1528")
     # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\reference-better-sequenced\added")
     # input_dir = Path("./data/LP/Gamma-M-patterned-1525~1575/1")

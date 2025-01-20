@@ -318,8 +318,8 @@ class SpectralAnalyzer:
         # plotter.camera.position = [0, 0, 1]  # 设置相机位置，选择合适的角度
         # plotter.camera.viewup = [0, 1, 0]  # 设置相机"上"方向（可以根据需要调整）
 
-        # 设置视场角（Field of View, FOV）
-        plotter.camera.view_angle = 45  # 调整视场角度
+        # # 设置视场角（Field of View, FOV）
+        # plotter.camera.view_angle = 45  # 调整视场角度
 
         # 添加体积渲染，并设置颜色范围
         logging.info("开始添加体积渲染到绘图器...")
