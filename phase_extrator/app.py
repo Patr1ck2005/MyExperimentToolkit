@@ -8,5 +8,6 @@ initial_values = {
     'loc_y': 352,
     'radius': 12
 }
-app = FourierApp(root, image_path=r'./data/1508~1528-cropped_bigger/-1511nm-processed.png', initial_value=initial_values)
+# 1511, 1519, 1528
+app = FourierApp(root, image_path=r'./data/1508~1528-cropped_bigger/-1519nm-processed.png', initial_value=initial_values)
 root.mainloop()

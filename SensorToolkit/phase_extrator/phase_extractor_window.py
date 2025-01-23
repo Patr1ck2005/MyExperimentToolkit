@@ -97,10 +97,10 @@ class FourierApp:
         """
         # 设置保存的文件名
         filenames = [
-            f'./rsl/{self.filestem}-original_fourier_spectrum.png',
-            f'./rsl/{self.filestem}-filtered_fourier_spectrum.png',
-            f'./rsl/{self.filestem}-extracted_intensity.png',
-            f'./rsl/{self.filestem}-extracted_phase.png'
+            f'./rsl/{self.filestem}-original_fourier_spectrum',
+            f'./rsl/{self.filestem}-filtered_fourier_spectrum',
+            f'./rsl/{self.filestem}-extracted_intensity',
+            f'./rsl/{self.filestem}-extracted_phase'
         ]
 
         # 保存每个子图
@@ -115,14 +115,18 @@ class FourierApp:
             for artist in ax.get_children():
                 # 如果 artist 是图像对象，复制其内容
                 if isinstance(artist, mpimg.AxesImage):
-                    new_ax.imshow(artist.get_array(), cmap=artist.get_cmap())
+                    array = artist.get_array()
+                    new_ax.imshow(array, cmap=artist.get_cmap())
 
             # 去除坐标轴和标题
             new_ax.axis('off')
 
             # 保存子图
             fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-            fig.savefig(filenames[i], dpi=300, bbox_inches='tight', pad_inches=0)
+            fig.savefig(filenames[i]+'.png', dpi=300, bbox_inches='tight', pad_inches=0)
+            if isinstance(array, np.ma.MaskedArray):
+                array = array.filled()  # 将 MaskedArray 中的掩盖值用填充值替换
+            np.save(filenames[i]+'.npy', array)
             plt.close(fig)  # 关闭当前的 Figure，以释放内存
 
     def adjust_param(self, param, step):
@@ -170,16 +174,3 @@ class FourierApp:
 
         self.canvas.draw()
 
-
-
-if __name__ == "__main__":
-    root = Tk()
-    # app = FourierApp(root, image_path='./artificial_pattern.png')
-    # app = FourierApp(root, image_path=r'./-1518nm-processed.png')
-    app = FourierApp(root, image_path=r'./-1518nm.png')
-    # app = FourierApp(root, image_path=r'1.png')
-    # app = FourierApp(root, image_path='./interference_cropped.bmp')
-    # app = FourierApp(root, image_path='./interference_1.bmp')
-    # app = FourierApp(root, image_path='./interference_2.bmp')
-    # app = FourierApp(root, image_path='./interference_3.bmp')
-    root.mainloop()

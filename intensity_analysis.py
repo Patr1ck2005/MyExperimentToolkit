@@ -32,21 +32,22 @@ def main():
     # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\reference-better-sequenced\added")
 
     input_dirs = [
-        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000(0.640~1.620)~15.835-42~90-1518"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000~15.835-~42~90\forw_back-added\forw"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\reference"),
+        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640-old\patterned\divided"),
         # input_dir
     ]
     # input_dir = Path("./data/LP/Gamma-M-patterned-1525~1575/1")
     output_csv_path = Path("./rsl/optical_intensity_results.csv")
 
     # 2. 定义裁剪参数（圆形裁剪，固定中心）
-    NA = 0.42
-    NA2radius = lambda na: 0.31*(na/np.sqrt(1-na**2))/(0.42/np.sqrt(1-0.42**2))
     crop_shape_params = {
         'center_row': 0.46,   # 相对坐标
         'center_col': 0.47,   # 相对坐标 for phase pattern
-        # 'radius': 0.35,       # 相对半径 bigger
+        'radius': 0.35,       # 相对半径 bigger
         # 'radius': 0.31,       # 相对半径
-        'radius': NA2radius(NA),       # 相对半径
         # 'radius': 0.15,       # 相对半径 smaller
         'inner_radius': 0,       # 相对半径
         'shape': 'circle',
@@ -55,7 +56,7 @@ def main():
 
     statistics_params = {
         # 'NA': [0.16, 0.20, 0.24, 0.28, 0.32, 0.36, 0.40, 0.42]
-        'NA': [0.18, 0.24, 0.30, 0.36, 0.42]
+        'NA': [0.06, 0.12, 0.18, 0.24, 0.30, 0.36, 0.42]
     }
 
     # 3. 初始化分析器（可选添加标签）

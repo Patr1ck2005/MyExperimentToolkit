@@ -79,6 +79,12 @@ class SequenceDivider:
         image1_np = np.array(image1, dtype=np.float32)
         image2_np = np.array(image2, dtype=np.float32)
 
+        # 计数非透明像素点
+        non_zero_count1 = np.count_nonzero(alpha1)
+        non_zero_count2 = np.count_nonzero(alpha2)
+        # 统计非透明像素点比例
+        non_zero_ratio1 = non_zero_count1 / (image1.height * image1.width)
+        non_zero_ratio2 = non_zero_count2 / (image2.height * image2.width)
         # 将透明区域（alpha为0的地方）处理成0
         image1_np[alpha1 == 0] = 0
         image2_np[alpha2 == 0] = 0
@@ -90,7 +96,7 @@ class SequenceDivider:
         if self.p2p:
             result_np = np.clip(255 * image1_np / image2_np, 0, 255)  # 保证结果在0到255范围内
         else:
-            result_np = np.clip(255 * image1_np / image2_np.mean(), 0, 255)  # 保证结果在0到255范围内
+            result_np = np.clip(255 * image1_np / image2_np.mean()*non_zero_ratio2, 0, 255)  # 保证结果在0到255范围内
 
         # 转换回Image对象，确保结果是RGB模式
         result_image = Image.fromarray(np.uint8(result_np))
