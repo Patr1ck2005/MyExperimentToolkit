@@ -32,11 +32,12 @@ def main():
     # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\reference-better-sequenced\added")
 
     input_dirs = [
-        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided"),
+        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000(0.640~1.620)~15.835-42~90-1518"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000~15.835-~42~90\forw_back-added\forw"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\reference"),
-        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640-old\patterned\divided"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640-old\patterned\divided-p2p"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\2024\CP\CP-1525~1575\1"),
         # input_dir
     ]
     # input_dir = Path("./data/LP/Gamma-M-patterned-1525~1575/1")
@@ -44,10 +45,12 @@ def main():
 
     # 2. 定义裁剪参数（圆形裁剪，固定中心）
     crop_shape_params = {
-        'center_row': 0.46,   # 相对坐标
-        'center_col': 0.47,   # 相对坐标 for phase pattern
-        'radius': 0.35,       # 相对半径 bigger
-        # 'radius': 0.31,       # 相对半径
+        # 'center_row': 0.46,   # 相对坐标
+        # 'center_col': 0.47,   # 相对坐标 for phase pattern
+        'center_row': 0.38,  # 相对坐标
+        'center_col': 0.50,  # 相对坐标 for phase pattern
+        # 'radius': 0.35,       # 相对半径 bigger
+        'radius': 0.31,       # 相对半径
         # 'radius': 0.15,       # 相对半径 smaller
         'inner_radius': 0,       # 相对半径
         'shape': 'circle',
