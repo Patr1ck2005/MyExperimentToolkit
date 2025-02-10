@@ -25,8 +25,8 @@ def main():
     # opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
     # cmap = "viridis"
     # cmap = "hot"
-    # cmap = "magma"
-    cmap = "gray"
+    cmap = "magma"
+    # cmap = "gray"
 
     if False:
         # 定义裁剪后图像所在的目录
@@ -78,7 +78,7 @@ def main():
 
     if True:
         # 定义裁剪后图像所在的目录
-        data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\divided")
+        data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided")
         # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\Gamma_X\window_average_rsl")
         # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\Gamma-M\window_average_rsl")
         # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\window_average_rsl\5")

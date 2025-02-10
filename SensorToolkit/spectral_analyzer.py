@@ -313,7 +313,7 @@ class SpectralAnalyzer:
         plotter = pv.Plotter()
 
         # # 启用正交投影 (平行视图)
-        # plotter.camera.parallel_projection = True
+        plotter.camera.parallel_projection = True
         # # 设置相机视角
         # plotter.camera.position = [0, 0, 1]  # 设置相机位置，选择合适的角度
         # plotter.camera.viewup = [0, 1, 0]  # 设置相机"上"方向（可以根据需要调整）
@@ -470,7 +470,7 @@ class SpectralAnalyzer:
         mapped_image = cmap(combined_intensity_map)  # 映射到颜色空间
         # 转换为RGB图像 (去除透明度通道)
         pil_image = Image.fromarray((mapped_image[:, :, :3] * 255).astype(np.uint8))
-        pil_image_path = output_path.with_suffix(".pil_image.png")
+        pil_image_path = output_path.with_suffix(".pure_image.png")
         pil_image.save(pil_image_path)
         logging.info(f"PIL图像已保存至: {pil_image_path}")
 

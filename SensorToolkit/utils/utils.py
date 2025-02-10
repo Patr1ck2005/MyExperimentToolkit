@@ -14,8 +14,8 @@ def snell_law(theta_i, n_i, n_t):
 # 计算反射系数（平行偏振和垂直偏振）
 def fresnel_reflection_coefficients(theta_i, n_i, n_t):
     # theta_i: 入射角（弧度）
-    # n1: 入射介质的折射率
-    # n2: 折射介质的折射率
+    # n_i: 入射介质的折射率
+    # n_t: 折射介质的折射率
     theta_t = snell_law(theta_i, n_i, n_t)
 
     # 垂直偏振反射系数 (r_s)
@@ -56,8 +56,8 @@ if __name__ == '__main__':
     theta_i = np.deg2rad(22.5)
     n_i = 1  # 入射介质折射率
     n_j = 1.44+14.56j  # 折射介质折射率
-    jones_in = np.array([1, 1j], dtype=complex)  # 入射偏振态
-    # jones_in = np.array([1, 0], dtype=complex)  # 入射偏振态
+    # jones_in = np.array([1, 1j], dtype=complex)  # 入射偏振态
+    jones_in = np.array([1, 0], dtype=complex)  # 入射偏振态
     # jones_in = np.array([0, 1], dtype=complex)  # 入射偏振态
     total_in = np.sqrt(np.sum(np.abs(jones_in) ** 2))
     # 入射归一化
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     else:
         print(f"折射角: {np.degrees(theta_t):.5f}°")
     print(f"出射偏振态琼斯矢量: {jones_out}")
-    total = np.sum(np.abs(jones_out) ** 2)
+    total = np.sum(np.abs(jones_out) ** 2)**2
     print(f"出射光强: {total:.5f}")
 
 
