@@ -89,7 +89,7 @@ class OpticalIntensityAnalyzer:
                 'filename': filename,
                 'wavelength_nm': wavelength,
                 'labels': ','.join(combined_labels),
-                'average_intensity': avg_intensity
+                'average_intensity_rect': avg_intensity
             }
             self.results.append(result)
 
@@ -109,20 +109,29 @@ class OpticalIntensityAnalyzer:
         avg_intensity = self.processor.calculate_average_intensity() / 255
         avg_intensities_in_ranges = {}
 
-        if statistics_params:
-            NA_list = statistics_params.get('NA', [])
-            for NA in NA_list:
-                radius = self.processor.NA2radius(NA, full_na=0.42, full_radius=0.5)
-                avg_intensities_in_ranges[f'avg_intensity_NA{NA}'] = self.processor.calculate_avg_intensity_in_radius_range(0, radius)/255
+        with self.temp_dir() as temp_dir:
+            file_name_without_ext = image_file.stem
+            image_save_path = temp_dir / f"{file_name_without_ext}-statistics.png"
+            if statistics_params:
+                NA_list = statistics_params.get('NA', [])
+                for NA in NA_list:
+                    radius = self.processor.NA2radius(NA, full_na=0.42, full_radius=0.5)
+                    avg_intensities_in_ranges[f'avg_intensity_NA{NA}'] = (
+                            self.processor.calculate_avg_intensity_in_radius_range(
+                                0, radius,
+                                # angle_domains=[[45, 135], [-135, -45]]
+                            ) / 255)
+                    self.processor.save_processed_data(save_path=image_save_path, colormap='magma')
 
-        logging.info(f"文件 {filename} 统计完成，平均光强: {avg_intensity}, 其他范围光强平均值: {avg_intensities_in_ranges}")
+        logging.info(
+            f"文件 {filename} 统计完成，平均光强: {avg_intensity}, 其他范围光强平均值: {avg_intensities_in_ranges}")
 
         result = {
             'dir': self.current_input_dir.name,
             'filename': filename,
             'wavelength_nm': wavelength,
             'labels': ','.join(combined_labels),
-            'average_intensity': avg_intensity
+            'average_intensity_rect': avg_intensity
         }
 
         result.update(avg_intensities_in_ranges)

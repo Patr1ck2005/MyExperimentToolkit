@@ -16,6 +16,7 @@ logging.basicConfig(
 # 导入标签（可选）
 # from labels import labels
 
+
 def main():
     # 1. 定义输入和输出路径
     # input_dir = Path("./data/3")
@@ -32,7 +33,16 @@ def main():
     # input_dir = Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure-better\reference-better-sequenced\added")
 
     input_dirs = [
-        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided"),
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided-p2p"),  # final
+        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp"),  # temp
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\1-filtered-details-0.480"),  # temp
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned"),  # final
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\unpatterned"),  # final
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\imaging beam\filtered-mid-unpatterned\forw"),  # original
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\imaging beam\1-filtered-mid\forw"),  # original
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\focused\ref\forw"),  # original
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\focused\convert\forw"),  # original
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\1-unfiltered-pos"),  # imaging
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000(0.640~1.620)~15.835-42~90-1518"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000~15.835-~42~90\forw_back-added\forw"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\reference"),
@@ -45,12 +55,14 @@ def main():
 
     # 2. 定义裁剪参数（圆形裁剪，固定中心）
     crop_shape_params = {
-        # 'center_row': 0.46,   # 相对坐标
         # 'center_col': 0.47,   # 相对坐标 for phase pattern
-        'center_row': 0.38,  # 相对坐标
-        'center_col': 0.50,  # 相对坐标 for phase pattern
-        # 'radius': 0.35,       # 相对半径 bigger
-        'radius': 0.31,       # 相对半径
+        # 'center_row': 0.46,   # 相对坐标
+        # 'center_col': 0.33,  # 相对坐标 for phase pattern
+        # 'center_row': 0.41,  # 相对坐标
+        'center_col': 0.46,  # 相对坐标 for imaging
+        'center_row': 0.55,  # 相对坐标 for imaging
+        'radius': 0.35,       # 相对半径 bigger
+        # 'radius': 0.31,       # 相对半径
         # 'radius': 0.15,       # 相对半径 smaller
         'inner_radius': 0,       # 相对半径
         'shape': 'circle',

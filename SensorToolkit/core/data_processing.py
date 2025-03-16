@@ -9,7 +9,7 @@ from scipy.fft import fft2, ifft2, fftshift, ifftshift
 import logging
 from pathlib import Path
 from PIL import Image
-from matplotlib import cm
+from matplotlib import cm, pyplot as plt
 from matplotlib.colors import Normalize
 
 
@@ -25,10 +25,10 @@ class DataProcessor:
         """
         预处理数据，包括去除行列索引并归一化。
         """
-        if 'row' in data.columns and 'col' in data.index.names:
+        if 'row' in data.columns or 'col' in data.index.names:
             data = data.drop(['row'], axis=1)
-            data.index = data['row']
-            data = data.drop(['row'], axis=1)
+            # data.index = data['row']
+            # data = data.drop(['row'], axis=1)
         if isinstance(data, int):
             self.data = data.astype(float) / 255.0  # 归一化到0-1
         else:
@@ -307,12 +307,15 @@ class DataProcessor:
         logging.info(f"上采样完成，缩放因子={zoom_factor}, 插值阶数={order}")
         return self
 
-    def calculate_avg_intensity_in_radius_range(self, min_radius: float, max_radius: int) -> float:
+    def calculate_avg_intensity_in_radius_range(
+            self, min_radius: float, max_radius: int, angle_domains: list = ((-180, 180), )
+    ) -> float:
         """
         计算指定半径范围内的平均光强值（例如，从 min_radius 到 max_radius 的区域）
 
         :param min_radius: 最小半径
         :param max_radius: 最大半径
+        :param angle_domains: 角度范围
         :return: 计算出的平均光强值
         """
         # 获取裁剪后的数据的形状
@@ -327,11 +330,23 @@ class DataProcessor:
 
         # 计算每个像素到中心的距离
         r2 = (x - center_x) ** 2 + (y - center_y) ** 2
+        angle = np.arctan2(y - center_y, x - center_x) * 180 / np.pi  # 计算角度
 
         # 创建圆形掩码
         mask_min_radius = r2 >= min_radius ** 2
         mask_max_radius = r2 <= max_radius ** 2
-        mask = mask_min_radius & mask_max_radius  # 选择在两个半径范围之间的像素
+
+        mask_sections = np.zeros_like(self.data, dtype=bool)
+        for angle_domain in angle_domains:
+            # 创建扇形掩码
+            mask_section = angle_domain[0] <= angle
+            mask_section &= angle <= angle_domain[1]
+            mask_sections |= mask_section
+
+        mask = mask_min_radius & mask_max_radius & mask_sections  # 选择在两个半径范围之间的像素
+
+        # plt.imshow(mask, origin='lower', cmap='gray')
+        # plt.show()
 
         # 获取该掩码区域内的光强值
         region_data = self.data.values[mask]  # 提取该范围内的光强值
