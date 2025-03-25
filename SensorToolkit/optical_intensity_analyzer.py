@@ -1,6 +1,6 @@
 from pathlib import Path
 import logging
-from SensorToolkit.core.data_loading import ImageDataLoader
+from SensorToolkit.core.data_loading import *
 from SensorToolkit.core.data_processing import DataProcessor
 from SensorToolkit.core.data_saving import CSVSaver
 from SensorToolkit.utils.filename_parser import FilenameParser
@@ -8,9 +8,10 @@ import pandas as pd
 from typing import Optional, List, Dict
 from contextlib import contextmanager
 
-# 定义文件扩展名常量
-IMAGE_EXTENSION = "*.png"
+import numpy as np
 
+FULL_NA = 0.42
+FULL_RADIUS = 0.5
 
 class OpticalIntensityAnalyzer:
     """
@@ -24,13 +25,15 @@ class OpticalIntensityAnalyzer:
             output_csv_path: Optional[Path] = None,
             crop_shape_params: Optional[Dict] = None,
             labels: Optional[Dict[str, str]] = None,
-            filename_delimiter: str = '-'
+            file_extension: str = '.png',
+            filename_delimiter: str = '-',
     ):
         self.processor = None
         self.input_dirs = input_dirs if input_dirs else [input_dir]
         self.output_csv_path = output_csv_path
         self.crop_shape_params = crop_shape_params
         self.labels = labels or {}
+        self.file_extension = file_extension
         self.results = []
         self.filename_parser = FilenameParser(delimiter=filename_delimiter)
         logging.info(f"初始化 OpticalIntensityAnalyzer，输入目录: {self.input_dirs}, 输出 CSV: {self.output_csv_path}")
@@ -63,7 +66,10 @@ class OpticalIntensityAnalyzer:
         manual_label = self.labels.get(filename, "")
         combined_labels = labels_from_filename + ([manual_label] if manual_label else [])
 
-        loader = ImageDataLoader(image_file)
+        if self.file_extension == '.npy':
+            loader = NpyDataLoader(image_file)
+        elif self.file_extension == '.png':
+            loader = ImageDataLoader(image_file)
         data = loader.load_data()
         self.processor = DataProcessor(data)
 
@@ -102,7 +108,10 @@ class OpticalIntensityAnalyzer:
         manual_label = self.labels.get(filename, "")
         combined_labels = labels_from_filename + ([manual_label] if manual_label else [])
 
-        loader = ImageDataLoader(image_file)
+        if self.file_extension == '.npy':
+            loader = NpyDataLoader(image_file)
+        elif self.file_extension == '.png':
+            loader = ImageDataLoader(image_file)
         data = loader.load_data()
         self.processor = DataProcessor(data)
 
@@ -114,13 +123,25 @@ class OpticalIntensityAnalyzer:
             image_save_path = temp_dir / f"{file_name_without_ext}-statistics.png"
             if statistics_params:
                 NA_list = statistics_params.get('NA', [])
+                average_weight = statistics_params.get('average_weight', 'even')
                 for NA in NA_list:
-                    radius = self.processor.NA2radius(NA, full_na=0.42, full_radius=0.5)
-                    avg_intensities_in_ranges[f'avg_intensity_NA{NA}'] = (
-                            self.processor.calculate_avg_intensity_in_radius_range(
-                                0, radius,
-                                # angle_domains=[[45, 135], [-135, -45]]
-                            ) / 255)
+                    if average_weight == 'even':
+                        clip_radius = self.processor.NA2radius(NA, full_na=FULL_NA, full_radius=FULL_RADIUS)
+                        inner_radius = statistics_params.get('hollow_proportion', 0)*clip_radius
+                        average = (
+                                self.processor.calculate_avg_intensity_in_radius_range(
+                                    min_radius=inner_radius, max_radius=clip_radius,
+                                    # angle_domains=[[45, 135], [-135, -45]]
+                                ) / 255)
+                    elif average_weight == 'gaussian':
+                        clip_radius = self.processor.NA2radius(NA, full_na=FULL_NA, full_radius=FULL_RADIUS)
+                        average = (
+                                self.processor.calculate_avg_intensity_in_radius_range(
+                                    min_radius=0, max_radius=.5, gaussian_waist=clip_radius,
+                                    # angle_domains=[[45, 135], [-135, -45]]
+                                ) / 255)
+                    logging.info(f"文件 {filename} 计算值: {average}")
+                    avg_intensities_in_ranges[f'avg_intensity_NA{NA}'] = average
                     self.processor.save_processed_data(save_path=image_save_path, colormap='magma')
 
         logging.info(
@@ -153,7 +174,7 @@ class OpticalIntensityAnalyzer:
         for input_dir in self.input_dirs:
             self.current_input_dir = input_dir
             logging.info(f"开始处理目录: {input_dir}")
-            image_files = list(self.current_input_dir.glob(IMAGE_EXTENSION))
+            image_files = list(self.current_input_dir.glob('*'+self.file_extension))
             if not image_files:
                 logging.warning(f"在 {self.current_input_dir} 中未找到任何 PNG 文件。")
                 return
@@ -173,7 +194,7 @@ class OpticalIntensityAnalyzer:
         """ 批量统计输入目录中的所有图像文件 """
         for input_dir in self.input_dirs:
             self.current_input_dir = input_dir
-            image_files = list(self.current_input_dir.glob(IMAGE_EXTENSION))
+            image_files = list(self.current_input_dir.glob('*'+self.file_extension))
             if not image_files:
                 logging.warning(f"在 {self.current_input_dir} 中未找到任何 PNG 文件。")
                 return

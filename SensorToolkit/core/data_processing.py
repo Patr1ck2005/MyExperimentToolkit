@@ -308,16 +308,22 @@ class DataProcessor:
         return self
 
     def calculate_avg_intensity_in_radius_range(
-            self, min_radius: float, max_radius: int, angle_domains: list = ((-180, 180), )
+            self,
+            min_radius: float,
+            max_radius: float,
+            gaussian_waist: float = 0.0,
+            angle_domains: list = ((-180, 180), )
     ) -> float:
         """
         计算指定半径范围内的平均光强值（例如，从 min_radius 到 max_radius 的区域）
 
         :param min_radius: 最小半径
         :param max_radius: 最大半径
+        :param gaussian_waist: 高斯权重束腰
         :param angle_domains: 角度范围
         :return: 计算出的平均光强值
         """
+        data = self.data.copy()
         # 获取裁剪后的数据的形状
         num_rows, num_cols = self.data.shape
 
@@ -336,7 +342,7 @@ class DataProcessor:
         mask_min_radius = r2 >= min_radius ** 2
         mask_max_radius = r2 <= max_radius ** 2
 
-        mask_sections = np.zeros_like(self.data, dtype=bool)
+        mask_sections = np.zeros_like(data, dtype=bool)
         for angle_domain in angle_domains:
             # 创建扇形掩码
             mask_section = angle_domain[0] <= angle
@@ -345,14 +351,23 @@ class DataProcessor:
 
         mask = mask_min_radius & mask_max_radius & mask_sections  # 选择在两个半径范围之间的像素
 
-        # plt.imshow(mask, origin='lower', cmap='gray')
-        # plt.show()
+        # 计算高斯权重
+        if gaussian_waist > 0:
+            # data[:] = 255
+            gaussian_waist *= num_rows
+            weights = np.exp(-r2 / (gaussian_waist ** 2))
+        else:
+            weights = np.ones_like(data)
 
         # 获取该掩码区域内的光强值
-        region_data = self.data.values[mask]  # 提取该范围内的光强值
+        region_data = data.values[mask]  # 提取该范围内的光强值
+        region_weights = weights[mask]  # 提取对应的权重
+
+        weighted_region_data = region_data*region_weights
 
         if len(region_data) > 0:
-            avg_intensity = region_data.mean()  # 计算该范围内的平均光强
+            avg_intensity = np.sum(weighted_region_data)/np.sum(region_weights)  # 计算该范围内的平均光强
+            print(avg_intensity/255)
         else:
             avg_intensity = 0.0  # 如果区域内没有有效数据，则返回 0
 

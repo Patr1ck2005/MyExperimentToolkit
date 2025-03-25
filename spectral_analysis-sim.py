@@ -1,0 +1,129 @@
+import logging
+from pathlib import Path
+
+import numpy as np
+
+from SensorToolkit.spectral_analyzer import SpectralAnalyzer
+
+def main():
+    # 配置 logging
+    logging.basicConfig(
+        level=logging.INFO,  # 设置日志级别为 INFO
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 设置日志格式
+        handlers=[
+            logging.StreamHandler()  # 将日志输出到控制台
+        ]
+    )
+
+
+    # 定义颜色范围（可选）
+    color_range = (0.0, 1.0)  # 根据需要调整
+    # color_range = (-np.pi, +np.pi)  # 根据需要调整
+    # color_range = None  # 根据需要调整
+
+    # opacity = [0, 0.1, 0.5, 0.75, 1.0]  # 自定义透明度映射
+    opacity = 'linear'  # 定义透明度映射
+    # opacity = 1  # 定义透明度映射
+    # opacity = [int(val > 0) for val in np.linspace(-0.01, 1, 255)]  # 定义透明度映射
+    # cmap = "viridis"
+    # cmap = "hot"
+    cmap = "magma"
+    # cmap = "twilight"
+    # cmap = "gray"
+
+    if True:
+        # 定义裁剪后图像所在的目录
+        # data_directory = Path(r"D:\DELL\Documents\S4Simulation\img\1500~1600\phase\broken_sym")
+        # data_directory = Path(r"D:\DELL\Documents\S4Simulation\img\1500~1600\conversion_efficiency\broken_sym")
+        data_directory = Path(r"D:\DELL\Documents\S4Simulation\img\1500~1600\conversion_efficiency\C2")
+        # data_directory = Path(r"D:\DELL\Documents\S4Simulation\img\1500~1600\conversion_efficiency\C4")
+        # data_directory = Path(r"D:\DELL\Documents\S4Simulation\img\1500~1600\phase\C2")
+
+        # 初始化光谱分析器
+        spectral_analyzer = SpectralAnalyzer(
+            working_dir=data_directory,
+            boundary_na=0.42,
+            wavelength_order='descending',  # 或 'ascending'
+            file_type='npy',  # 'npy' 或 'png'
+        )
+
+        # 运行3D光谱可视化，并保存为PNG和HTML文件
+        spectral_analyzer.load_data_files()
+        (spectral_analyzer
+        .apply_2d_upsample(
+            zoom_factor=5.0,
+            order=3
+        )
+        .crop_data(
+            center_row=0.5,   # 相对坐标
+            center_col=0.5,   # 相对坐标
+            radius=0.5,       # 相对半径
+            inner_radius=0,       # 相对半径
+            shape='circle',
+            relative=True     # 使用相对坐标
+        )
+        )
+        spectral_analyzer.visualize_3d_volume_pyvista(
+            output_path=Path("./spectral_3d_visualization.png"),
+            html_path=Path("./spectral_3d_visualization.html"),
+            opacity=opacity,
+            cmap=cmap,
+            clim=color_range,
+            angles=[45, 135],
+        )
+        spectral_analyzer.visualize_two_planes_intensity_map(
+            angles=[45, 135],
+            output_path=Path("./sim_two_planes_intensity_map.png"),
+            vmax=1,
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if False:
+        # 定义裁剪后图像所在的目录
+        data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\Gamma_X\window_average_rsl")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\Gamma-M\window_average_rsl")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\window_average_rsl\5")
+        # data_directory = Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\unpatterned\window_average_rsl")
+        # data_directory = Path("./temp/1-filtered")
+        # data_directory = Path("./temp/3-filtered")
+        # data_directory = Path("./temp/Gamma-M")
+        # data_directory = Path("./temp/Gamma-X")
+
+        # 初始化光谱分析器
+        spectral_analyzer = SpectralAnalyzer(
+            working_dir=data_directory,
+            boundary_na=0.42,
+            wavelength_order='descending',  # 或 'ascending'
+            file_type='png',  # 'npy' 或 'png'
+            max_wavelength=1601
+        )
+
+        # 定义颜色范围（可选）
+        # color_range = (0.0, 1.0)  # 根据需要调整
+        color_range = None  # 根据需要调整
+
+        start_angle = +45
+
+        # 运行3D光谱可视化，并保存为PNG和HTML文件
+        spectral_analyzer.load_data_files()
+        # spectral_analyzer.trans_to_efficiency()
+        spectral_analyzer.visualize_3d_volume_pyvista(
+            output_path=Path("./spectral_3d_visualization.png"),
+            html_path=Path("./spectral_3d_visualization.html"),
+            opacity=opacity,
+            cmap=cmap,
+            clim=color_range,
+            angles=[start_angle, start_angle+145],
+        )
+
+        # 运行3D光谱可视化，并保存为PNG和HTML文件
+        spectral_analyzer.visualize_two_planes_intensity_map(
+            angles=[start_angle, start_angle+145],
+            output_path=Path("./two_planes_intensity_map.png"),
+            cmap=cmap,
+        )
+
+if __name__ == "__main__":
+    main()

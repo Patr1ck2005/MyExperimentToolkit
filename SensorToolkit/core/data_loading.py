@@ -67,3 +67,27 @@ class ImageDataLoader(DataLoader):
         except Exception as e:
             logging.error(f"加载图像文件失败 ({self.file_path}): {e}")
             raise
+
+
+class NpyDataLoader(DataLoader):
+    """
+    用于加载 NPY 文件的数据加载器。
+    """
+    def __init__(self, file_path: Path):
+        if not file_path.is_file():
+            raise FileNotFoundError(f"NPY 文件未找到: {file_path}")
+        self.file_path = file_path
+
+    def load_data(self) -> pd.DataFrame:
+        try:
+            data = np.load(self.file_path)*255
+            df = pd.DataFrame(data)
+            df.index.name = 'row'
+            df.columns.name = 'col'
+            df.reset_index(inplace=True)
+            df.rename(columns={'index': 'row'}, inplace=True)
+            logging.info(f"成功加载 NPY 文件: {self.file_path}，数据形状: {df.shape}")
+            return df
+        except Exception as e:
+            logging.error(f"加载 NPY 文件失败 ({self.file_path}): {e}")
+            raise

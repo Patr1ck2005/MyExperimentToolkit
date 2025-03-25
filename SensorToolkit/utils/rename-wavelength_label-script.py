@@ -38,13 +38,13 @@ def rename_files_by_creation_time_with_range(folder_path, start, end):
         print(f"文件 {filename} 已重命名为 {new_name}")
 
 # 使用示例
-folder_path = r'D:\DELL\Documents\ExperimentDataToolkit\data\20250314\1-filtered-details-0.480'  # 请替换为实际路径
-# start = 1480  # 起始命名
-# end = 1640  # 终止命名
+folder_path = r'D:\DELL\Documents\ExperimentDataToolkit\data\20250311\bessel beam\1-filtered-mid\forw'  # 请替换为实际路径
+start = 1480  # 起始命名
+end = 1640  # 终止命名
 # start = 1640  # 起始命名
 # end = 1480  # 终止命名
-start = 1500  # 起始命名
-end = 1540  # 终止命名
+# start = 1500  # 起始命名
+# end = 1540  # 终止命名
 
 # 调用函数进行重命名
 rename_files_by_creation_time_with_range(folder_path, start, end)

@@ -312,14 +312,29 @@ class SpectralAnalyzer:
         # 创建绘图器
         plotter = pv.Plotter()
 
-        # # 启用正交投影 (平行视图)
-        plotter.camera.parallel_projection = True
+        # 启用正交投影 (平行视图)
+        plotter.camera.parallel_projection = False
+        # plotter.reset_camera()
+        # plotter.view_isometric()
         # # 设置相机视角
         # plotter.camera.position = [0, 0, 1]  # 设置相机位置，选择合适的角度
         # plotter.camera.viewup = [0, 1, 0]  # 设置相机"上"方向（可以根据需要调整）
-
-        # # 设置视场角（Field of View, FOV）
         # plotter.camera.view_angle = 45  # 调整视场角度
+        # 假设 plotter 已经创建，mesh 是你的物体
+        # bounds = grid.bounds  # (xmin, xmax, ymin, ymax, zmin, zmax)
+        # # 计算物体在 XY 平面的中心及范围
+        # center = [(bounds[0] + bounds[1]) / 2,
+        #           (bounds[2] + bounds[3]) / 2,
+        #           (bounds[4] + bounds[5]) / 2]
+        # scale = max(bounds[1] - bounds[0], bounds[3] - bounds[2]) * 0.6  # 调整比例因子，根据需要调整
+
+        # plotter.camera.focal_point = center
+        # 根据当前视角选择合适的位置，例如沿 Z 轴正方向
+        # plotter.camera.position = (center[0], center[1], center[2] + scale * 2)
+        # plotter.camera.parallel_scale = scale
+        # print("当前剪裁范围：", plotter.camera.clipping_range)
+        # 如果需要，可以尝试扩大剪裁范围：
+        # plotter.camera.clipping_range = (scale * 0.1, scale * 10)
 
         # 添加体积渲染，并设置颜色范围
         logging.info("开始添加体积渲染到绘图器...")

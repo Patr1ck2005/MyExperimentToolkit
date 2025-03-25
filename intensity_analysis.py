@@ -34,15 +34,18 @@ def main():
 
     input_dirs = [
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned\divided-p2p"),  # final
-        Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp"),  # temp
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp"),  # temp
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\1-filtered-details-0.480"),  # temp
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\patterned"),  # final
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\temp\1480~1640\unpatterned"),  # final
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\imaging beam\filtered-mid-unpatterned\forw"),  # original
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\imaging beam\1-filtered-mid\forw"),  # original
-        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\focused\ref\forw"),  # original
-        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\focused\convert\forw"),  # original
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\ref-unfiltered-600expo-1\forw"),  # original focal ref
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\ref-unfiltered-600expo-2\forw"),  # original focal ref
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\1-unfiltered-side-0.480\forw"),  # original focal pattern
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250314\1-unfiltered-pos"),  # imaging
+        # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250311\bessel beam\1-filtered-mid\forw"),  # bessel converted
+        Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250311\bessel beam\filtered-mid-unpatterned\forw"),  # bessel ref
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000(0.640~1.620)~15.835-42~90-1518"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\CP\1\pos_mid-1.000~15.835-~42~90\forw_back-added\forw"),
         # Path(r"D:\DELL\Documents\ExperimentDataToolkit\data\20250118\1480~1640-2cycle-sweep-back~forw-1.0Gain-5000Expsure\reference"),
@@ -58,9 +61,13 @@ def main():
         # 'center_col': 0.47,   # 相对坐标 for phase pattern
         # 'center_row': 0.46,   # 相对坐标
         # 'center_col': 0.33,  # 相对坐标 for phase pattern
-        # 'center_row': 0.41,  # 相对坐标
-        'center_col': 0.46,  # 相对坐标 for imaging
-        'center_row': 0.55,  # 相对坐标 for imaging
+        # # 'center_row': 0.41,  # 相对坐标
+        # 'center_col': 0.46,  # 相对坐标 for imaging
+        # 'center_row': 0.55,  # 相对坐标 for imaging
+        'center_col': 0.46,  # 相对坐标 for 0311BesselImaging
+        'center_row': 0.38,  # 相对坐标 for 0311BesselImaging
+        # 'center_col': 0.47,  # 相对坐标 for 0314imaging
+        # 'center_row': 0.58,  # 相对坐标 for 0314imaging
         'radius': 0.35,       # 相对半径 bigger
         # 'radius': 0.31,       # 相对半径
         # 'radius': 0.15,       # 相对半径 smaller
@@ -88,8 +95,8 @@ def main():
     # 或者在初始化时传入 labels 字典
 
     # 5. 执行批量处理
-    # analyzer.process_all()
-    analyzer.statistic_all(statistics_params=statistics_params,)
+    analyzer.process_all()
+    # analyzer.statistic_all(statistics_params=statistics_params,)
 
     # 6. 打印处理结果（可选）
     # print(analyzer.results)
